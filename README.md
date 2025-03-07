@@ -6,11 +6,11 @@
 
 The world's oceans are facing a critical threat from plastic pollution, with an estimated **[150 million tonnes of plastic waste present as of 2016](https://en.wikipedia.org/wiki/Great_Pacific_Garbage_Patch)**, projected to increase to **[ 250 million tonnes by 2025](https://en.wikipedia.org/wiki/Marine_plastic_pollution)**. This pollution poses severe risks to marine life, ecosystems, and human health.
 
-<img src="src/turtle.jpg" alt="Tangled Turtle" style="width: 80%; max-width: 1000px;">
+<img src="src/turtle.jpg" alt="Tangled Turtle" style="width: 80%; max-width: 1000px;">  
 
 The "Sall-e" project aims to address this issue by developing an integrated system that utilizes computer vision AI to detect marine debris and deploys robotic solutions for its collection. By leveraging drone imagery and advanced object detection models, Sall-e seeks to identify and localize garbage in ocean environments, facilitating efficient cleanup operations.
 
-<img src="src/polluted.jpg" alt="Polluted Ocean" style="width: 80%; max-width: 1000px;">
+<img src="src/polluted.jpg" alt="Polluted Ocean" style="width: 80%; max-width: 1000px;">  
 
 ---
 
@@ -32,6 +32,10 @@ To equip Sall-e with the capability to detect marine debris, we employed the YOL
 
 4. **Training**: The model was trained using the Ultralytics Hub's infrastructure, optimizing for accuracy in detecting and localizing garbage objects in aerial imagery.
 
+5. **Model Metrics** :
+<img src="src/eval.png" alt="Model Evaluation Metrics" style="width: 80%; max-width: 1000px;">  
+
+<img src="src/loss.png" alt="Model Loss Metrics" style="width: 80%; max-width: 1000px;">  
 ---
 
 ## **Synthetic Testing Image Generation** 📸
@@ -89,7 +93,7 @@ Dependencies Installation:
   ├── synthetic_test_3.jpg
   ...
 /model
-  ├── detection.pt
+  ├── garbage_detector.pt
 /src
   ├── logo.jpg
   ├── ocean.jpg
