@@ -1,8 +1,8 @@
-# **Project: Sall-e – Ocean Garbage Detection and Cleanup**
+# **Sall-e – Autonomous Robot for Oceanic Garbage Collection**
 
 <img src="src/logo.jpg" alt="Logo" style="width: 80%; max-width: 1000px;">
 
-## **Background and Mission**
+## **Background and Mission** 🤖♻️
 
 The world's oceans are facing a critical threat from plastic pollution, with an estimated **[150 million tonnes of plastic waste present as of 2016](https://en.wikipedia.org/wiki/Great_Pacific_Garbage_Patch)**, projected to increase to **[ 250 million tonnes by 2025](https://en.wikipedia.org/wiki/Marine_plastic_pollution)**. This pollution poses severe risks to marine life, ecosystems, and human health.
 
@@ -14,7 +14,7 @@ The "Sall-e" project aims to address this issue by developing an integrated syst
 
 ---
 
-## **Approach to Model Training**
+## **Approach to Model Training** ⚡
 
 To equip Sall-e with the capability to detect marine debris, we employed the YOLOv11m object detection model, leveraging the Ultralytics Hub for training and deployment. The training process involved the following steps:
 
@@ -34,7 +34,7 @@ To equip Sall-e with the capability to detect marine debris, we employed the YOL
 
 ---
 
-## **Synthetic Testing Image Generation**
+## **Synthetic Testing Image Generation** 📸
 
 To evaluate the model's performance in realistic scenarios, we developed a Python script `synthetic.py` to create synthetic testing images. The script performs the following tasks:
 
@@ -46,7 +46,7 @@ To evaluate the model's performance in realistic scenarios, we developed a Pytho
 
 ---
 
-## **Dataset Acknowledgment and Statistics**
+## **Dataset Acknowledgment and Statistics** 📊
 
 We acknowledge the use of the **[Garbage Detection UAV](https://en.wikipedia.org/wiki/Great_Pacific_Garbage_Patch)** dataset from Roboflow Universe in our project. The dataset's key statistics are as follows:
 
@@ -59,16 +59,21 @@ The dataset encompasses a diverse range of garbage types, providing a robust fou
 
 ---
 
-## **Project Setup**
+## **Project Setup** 🛠️
+
+Clone this project:
+```bash
+    git clone https://github.com/Lelekhoa1812/Sall-e.git
+```
 
 Dependencies Installation:  
 ```bash
-  pip install -r requirements.txt
+    pip install -r requirements.txt
 ```
 
 ---
 
-## **Project Structure**
+## **Project Structure** 📁
 ```plaintext
 /dataset
   ├── test/
@@ -94,6 +99,11 @@ Dependencies Installation:
 
 ---
 
-## **Conclusion**
+## **Conclusion** 🏁🚀
 
 The Sall-e project represents a concerted effort to harness advanced technologies in addressing the pressing issue of oceanic plastic pollution. By integrating computer vision and robotics, we aim to enhance the efficiency and effectiveness of marine debris detection and collection, contributing to the preservation of ocean health and biodiversity.
+
+---
+
+## **Acknowledgement of Resources** 
+This is the product from unit ENG30002 - Engineering Technology Sustainability Project, Swinburne University of Technology. 
