@@ -37,7 +37,7 @@ To equip Sall-e with the capability to detect marine debris, we employed the YOL
 
 <img src="src/loss.png" alt="Model Loss Metrics" style="width: 80%; max-width: 1000px;">  
 
-<img src="src/result.png" alt="Model Evaluation Result" style="width: 80%; max-width: 1000px;">  
+<img src="src/results.png" alt="Model Evaluation Result" style="width: 80%; max-width: 1000px;">  
 
 ---
 
@@ -122,7 +122,7 @@ Dependencies Installation:
   ├── ocean2.avif
   ├── ocean3.jpeg
   ├── ocean4.jpg
-  ├── result.png
+  ├── results.png
   ├── eval.png
   ├── loss.png 
 /README
