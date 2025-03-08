@@ -114,6 +114,30 @@ Dependencies Installation:
 
 ---
 
+## **Simulation Garbage Detection** 🧪
+
+<details>
+  <summary><strong>Detection Environment 1</strong></summary>
+  <img src="testing/detect_1.jpg" alt="Detection 1" style="width: 80%; max-width: 1000px;">
+</details>
+
+<details>
+  <summary><strong>Detection Environment 2</strong></summary>
+  <img src="testing/detect_2.jpg" alt="Detection 2" style="width: 80%; max-width: 1000px;">
+</details>
+
+<details>
+  <summary><strong>Detection Environment 3</strong></summary>
+  <img src="testing/detect_3.jpg" alt="Detection 3" style="width: 80%; max-width: 1000px;">
+</details>
+
+<details>
+  <summary><strong>Detection Environment 4</strong></summary>
+  <img src="testing/detect_4.jpg" alt="Detection 4" style="width: 80%; max-width: 1000px;">
+</details>
+
+---
+
 ## **Project Structure** 📁
 ```plaintext
 /dataset/
@@ -124,7 +148,8 @@ Dependencies Installation:
   ├── README
 /split.py              # custom splitting the dataset
 /crop.py               # crop object from data sample
-/synthetic.py          # generate synthetic testing img simulating ocena top-view
+/synthetic.py          # generate synthetic testing img simulating ocean top-view
+/detect.py             # generate img simulating garbage detection on ocean
 /crop/                 # cropped .png images sample from various garbage classes
   ├── plastic/
   ├── metal/
@@ -136,6 +161,11 @@ Dependencies Installation:
   ├── testing_2.jpg
   ├── testing_3.jpg
   ├── testing_4.jpg
+/detect/
+  ├── detect_1.jpg
+  ├── detect_2.jpg
+  ├── detect_3.jpg
+  ├── detect_4.jpg
 /model/
   ├── garbage_detector.pt
 /sample/
