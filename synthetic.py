@@ -1,76 +1,93 @@
 import os
-import cv2
 import random
+import cv2
 import numpy as np
-from glob import glob
+from PIL import Image
+import PIL
 
-def resize_background(image_path, target_size=(640, 640)):
-    """Resize ocean background to target size while keeping aspect ratio."""
-    img = cv2.imread(image_path)
-    img = cv2.resize(img, target_size, interpolation=cv2.INTER_LINEAR)
-    return img
-
-def load_yolo_labels(label_path):
-    """Load YOLO format labels from a file."""
-    labels = []
-    with open(label_path, 'r') as f:
-        for line in f.readlines():
-            parts = line.strip().split()
-            cls, x_center, y_center, width, height = map(float, parts)
-            labels.append((cls, x_center, y_center, width, height))
-    return labels
-
-def crop_objects(image_path, label_path):
-    """Crop objects from an image based on YOLO labels."""
-    img = cv2.imread(image_path)
-    h, w, _ = img.shape
-    objects = []
-    labels = load_yolo_labels(label_path)
-    
-    for cls, x_c, y_c, w_rel, h_rel in labels:
-        x = int((x_c - w_rel / 2) * w)
-        y = int((y_c - h_rel / 2) * h)
-        width = int(w_rel * w)
-        height = int(h_rel * h)
-        
-        cropped_obj = img[y:y+height, x:x+width]
-        if cropped_obj.size > 0:
-            objects.append(cropped_obj)
-    return objects
-
-def generate_synthetic_images(ocean_img_path, test_img_folder, test_label_folder, output_folder, num_images=3):
-    """Generate synthetic images by placing cropped objects on an ocean background."""
-    os.makedirs(output_folder, exist_ok=True)
-    
-    test_images = glob(os.path.join(test_img_folder, '*.jpg'))
-    random.shuffle(test_images)
-    selected_images = test_images[:10]
-    
-    all_objects = []
-    for img_path in selected_images:
-        label_path = os.path.join(test_label_folder, os.path.basename(img_path).replace('.jpg', '.txt'))
-        if os.path.exists(label_path):
-            objects = crop_objects(img_path, label_path)
-            all_objects.extend(objects)
-    
-    for i in range(num_images):
-        ocean_img = resize_background(ocean_img_path)
-        
-        for obj in all_objects:
-            obj_h, obj_w, _ = obj.shape
-            x_offset = random.randint(0, 640 - obj_w)
-            y_offset = random.randint(0, 640 - obj_h)
-            ocean_img[y_offset:y_offset + obj_h, x_offset:x_offset + obj_w] = obj
-        
-        output_path = os.path.join(output_folder, f'synthetic_test_{i+1}.jpg')
-        cv2.imwrite(output_path, ocean_img)
-        print(f"Saved: {output_path}")
+# Ensure AVIF support
+try:
+    import pillow_avif
+except ImportError:
+    print("Warning: 'pillow-avif-plugin' is not installed. Install it using 'pip install pillow-avif-plugin'.")
 
 # Paths
-ocean_image_path = 'src/ocean.jpg'
-test_images_path = 'dataset/test/images'
-test_labels_path = 'dataset/test/labels'
-output_path = 'testing'
+crop_dir = "/crop"
+testing_dir = "/testing"
+ocean_images = ["ocean1.jpg", "ocean2.avif", "ocean3.jpeg", "ocean4.jpg"]
 
-# Run the synthetic image generator
-generate_synthetic_images(ocean_image_path, test_images_path, test_labels_path, output_path)
+ocean_images = [os.path.join("/src", img) for img in ocean_images]
+os.makedirs(testing_dir, exist_ok=True)
+
+# Resize ocean images to 640x640 px
+def resize_image(image_path):
+    print(f"Processing image: {image_path}")
+    
+    # Process individually by ocean image types
+    try:
+        if image_path.lower().endswith(".avif"):
+            image = Image.open(image_path).convert("RGB")
+            image = image.resize((640, 640))
+            image = np.array(image)
+            image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
+        else:
+            image = cv2.imread(image_path)
+            if image is None:
+                print(f"Warning: Could not read image {image_path}")
+                return None
+            image = cv2.resize(image, (640, 640))
+    except PIL.UnidentifiedImageError:
+        print(f"Error: Unrecognized image format {image_path}, skipping...")
+        return None
+    
+    return image
+
+# Get class directories
+classes = [d for d in os.listdir(crop_dir) if os.path.isdir(os.path.join(crop_dir, d))]
+
+# Function to overlay PNG objects onto an image
+def overlay_image(background, overlay, x, y):
+    h, w, _ = overlay.shape
+    alpha_mask = overlay[:, :, 3] / 255.0
+    for c in range(0, 3):
+        background[y:y+h, x:x+w, c] = (alpha_mask * overlay[:, :, c] + (1 - alpha_mask) * background[y:y+h, x:x+w, c])
+    return background
+
+# Process each ocean image
+for idx, ocean_img_path in enumerate(ocean_images, start=1):
+    ocean_img = resize_image(ocean_img_path)
+    if ocean_img is None:
+        continue  # Skip if image could not be read
+    
+    # Select 8 random PNG images from each class
+    for class_name in classes:
+        class_path = os.path.join(crop_dir, class_name)
+        png_files = [f for f in os.listdir(class_path) if f.endswith(".png")]
+        selected_pngs = random.sample(png_files, min(8, len(png_files)))
+        
+        for png in selected_pngs:
+            png_path = os.path.join(class_path, png)
+            overlay = Image.open(png_path).convert("RGBA")
+            
+            # Scale down the overlay to height 10px
+            original_width, original_height = overlay.size
+            scale_factor = 10 / original_height
+            new_width = int(original_width * scale_factor)
+            overlay = overlay.resize((new_width, 10))
+            
+            # Convert overlay to NumPy array
+            overlay_np = np.array(overlay)
+            
+            # Select a random position on the ocean image
+            x_offset = random.randint(0, 640 - new_width)
+            y_offset = random.randint(0, 640 - 10)
+            
+            # Overlay the image
+            ocean_img = overlay_image(ocean_img, overlay_np, x_offset, y_offset)
+    
+    # Save the generated synthetic image with new naming convention
+    output_path = os.path.join(testing_dir, f"testing_{idx}.jpg")
+    cv2.imwrite(output_path, ocean_img)
+    print(f"{output_path} generated.")
+
+print("Synthetic images generated successfully!")

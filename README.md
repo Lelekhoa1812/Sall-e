@@ -79,25 +79,38 @@ Dependencies Installation:
 
 ## **Project Structure** 📁
 ```plaintext
-/dataset
+/dataset/
   ├── test/
   ├── train/
   ├── valid/
   ├── data.yaml
   ├── README
-/synthetic.py            # generate synthetic testing img
-/split.py                # custom splitting the dataset
-/testing
+/split.py              # custom splitting the dataset
+/crop.py               # crop object from data sample
+/synthetic.py          # generate synthetic testing img simulating ocena top-view
+/crop/                 # cropped .png images sample from various garbage classes
+  ├── plastic/
+  ├── metal/
+  ├── clothes/
+  ├── carton/
+  ├── ...
+/testing/
   ├── synthetic_test_1.jpg
   ├── synthetic_test_2.jpg
   ├── synthetic_test_3.jpg
+  ├── synthetic_test_4.jpg
   ...
-/model
+/model/
   ├── garbage_detector.pt
-/src
-  ├── logo.jpg
-  ├── ocean.jpg
-  ├── turtle.jpg
+/sample/
+/src/
+  ├── ocean1.jpg
+  ├── ocean2.avif
+  ├── ocean3.jpeg
+  ├── ocean4.jpg
+  ├── result.png
+  ├── eval.png
+  ├── loss.png 
 /README
 ```
 
