@@ -22,8 +22,9 @@ To equip Sall-e with the capability to detect marine debris, we employed the YOL
 
 2. **Data Preparation**: The dataset was uploaded to the Ultralytics Hub, ensuring compatibility with the YOLOv11m model requirements.
 
-3. <details>
-  <summary><strong>Model Configuration</strong></summary>
+3. **Model Configuration**:
+<details>
+  <summary><strong>Configuration</strong></summary>
     The <strong>YOLOv11m</strong> model was configured with the following parameters:
     <li><strong>Epochs</strong>: 200</li>
     <li><strong>Image Size</strong>: 640×640 pixels</li>
