@@ -93,22 +93,22 @@ Dependencies Installation:
 ## **Simulation Testing Environment** 🧪
 
 <details>
-  <summary><strong>Testing Environment 1</strong></summary>
+  <summary><strong>Testing Synthetic Environment 1</strong></summary>
   <img src="testing/testing_1.jpg" alt="Testing 1" style="width: 80%; max-width: 1000px;">
 </details>
 
 <details>
-  <summary><strong>Testing Environment 2</strong></summary>
+  <summary><strong>Testing Synthetic Environment 2</strong></summary>
   <img src="testing/testing_2.jpg" alt="Testing 2" style="width: 80%; max-width: 1000px;">
 </details>
 
 <details>
-  <summary><strong>Testing Environment 3</strong></summary>
+  <summary><strong>Testing Real Environment 1</strong></summary>
   <img src="testing/testing_3.jpg" alt="Testing 3" style="width: 80%; max-width: 1000px;">
 </details>
 
 <details>
-  <summary><strong>Testing Environment 4</strong></summary>
+  <summary><strong>Testing Real Environment 2</strong></summary>
   <img src="testing/testing_4.jpg" alt="Testing 4" style="width: 80%; max-width: 1000px;">
 </details>
 
@@ -117,24 +117,24 @@ Dependencies Installation:
 ## **Simulation Garbage Detection** 🔍
 
 <details>
-  <summary><strong>Detection Environment 1</strong></summary>
+  <summary><strong>Detection Synthetic Environment 1</strong></summary>
   <img src="detect/detect_1.jpg" alt="Detection 1" style="width: 80%; max-width: 1000px;">
 </details>
 
 <details>
-  <summary><strong>Detection Environment 2</strong></summary>
+  <summary><strong>Detection Synthetic Environment 2</strong></summary>
   <img src="detect/detect_2.jpg" alt="Detection 2" style="width: 80%; max-width: 1000px;">
 </details>
 
-<!-- <details>
-  <summary><strong>Detection Environment 3</strong></summary>
+<details>
+  <summary><strong>Detection Real Environment 1</strong></summary>
   <img src="detect/detect_3.jpg" alt="Detection 3" style="width: 80%; max-width: 1000px;">
 </details>
 
 <details>
-  <summary><strong>Detection Environment 4</strong></summary>
+  <summary><strong>Detection Real Environment 2</strong></summary>
   <img src="detect/detect_4.jpg" alt="Detection 4" style="width: 80%; max-width: 1000px;">
-</details> -->
+</details>
 
 ---
 
