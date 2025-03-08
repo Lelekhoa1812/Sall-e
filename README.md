@@ -36,6 +36,9 @@ To equip Sall-e with the capability to detect marine debris, we employed the YOL
 <img src="src/eval.png" alt="Model Evaluation Metrics" style="width: 80%; max-width: 1000px;">  
 
 <img src="src/loss.png" alt="Model Loss Metrics" style="width: 80%; max-width: 1000px;">  
+
+<img src="src/result.png" alt="Model Evaluation Result" style="width: 80%; max-width: 1000px;">  
+
 ---
 
 ## **Synthetic Testing Image Generation** 📸
@@ -77,6 +80,18 @@ Dependencies Installation:
 
 ---
 
+## **Simulation Testing Environment** 🧪
+
+<img src="testing/testing_1.jpg" alt="Testing 1" style="width: 80%; max-width: 1000px;">  
+
+<img src="testing/testing_2.jpg" alt="Testing 2" style="width: 80%; max-width: 1000px;">  
+
+<img src="testing/testing_3.jpg" alt="Testing 3" style="width: 80%; max-width: 1000px;">  
+
+<img src="testing/testing_4.jpg" alt="Testing 4" style="width: 80%; max-width: 1000px;">  
+
+---
+
 ## **Project Structure** 📁
 ```plaintext
 /dataset/
@@ -95,11 +110,10 @@ Dependencies Installation:
   ├── carton/
   ├── ...
 /testing/
-  ├── synthetic_test_1.jpg
-  ├── synthetic_test_2.jpg
-  ├── synthetic_test_3.jpg
-  ├── synthetic_test_4.jpg
-  ...
+  ├── testing_1.jpg
+  ├── testing_2.jpg
+  ├── testing_3.jpg
+  ├── testing_4.jpg
 /model/
   ├── garbage_detector.pt
 /sample/

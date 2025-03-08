@@ -73,14 +73,14 @@ for idx, ocean_img_path in enumerate(ocean_images, start=1):
             original_width, original_height = overlay.size
             scale_factor = 10 / original_height
             new_width = int(original_width * scale_factor)
-            overlay = overlay.resize((new_width, 10))
+            overlay = overlay.resize((new_width, 30))
             
             # Convert overlay to NumPy array
             overlay_np = np.array(overlay)
             
             # Select a random position on the ocean image
             x_offset = random.randint(0, 640 - new_width)
-            y_offset = random.randint(0, 640 - 10)
+            y_offset = random.randint(0, 640 - 30)
             
             # Overlay the image
             ocean_img = overlay_image(ocean_img, overlay_np, x_offset, y_offset)
