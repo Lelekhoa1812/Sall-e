@@ -114,7 +114,7 @@ Dependencies Installation:
 
 ---
 
-## **Simulation Garbage Detection** 🧪
+## **Simulation Garbage Detection** 🔍
 
 <details>
   <summary><strong>Detection Environment 1</strong></summary>
@@ -188,5 +188,5 @@ The Sall-e project represents a concerted effort to harness advanced technologie
 
 ---
 
-## **Acknowledgement of Resources** 
-This is the product from unit ENG30002 - Engineering Technology Sustainability Project, Swinburne University of Technology. 
+## **Acknowledgement of Resources** ✍️
+This project is a product from unit ENG30002 - Engineering Technology Sustainability Project, Swinburne University of Technology.  
