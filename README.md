@@ -22,22 +22,32 @@ To equip Sall-e with the capability to detect marine debris, we employed the YOL
 
 2. **Data Preparation**: The dataset was uploaded to the Ultralytics Hub, ensuring compatibility with the YOLOv11m model requirements.
 
-3. **Model Configuration**: The YOLOv11m model was configured with the following parameters:
-   - **Epochs**: 200
-   - **Image Size**: 640×640 pixels
-   - **Patience**: 100
-   - **Cache Strategy**: RAM
-   - **Device**: GPU
-   - **Batch Size**: 32
+3. **Model Configuration**:
+<details>
+  <summary><strong>Model Configuration</strong></summary>
+    The <strong>YOLOv11m</strong> model was configured with the following parameters:
+    <li><strong>Epochs</strong>: 200</li>
+    <li><strong>Image Size</strong>: 640×640 pixels</li>
+    <li><strong>Patience</strong>: 100</li>
+    <li><strong>Cache Strategy</strong>: RAM</li>
+    <li><strong>Device</strong>: GPU</li>
+    <li><strong>Batch Size</strong>: 32</li>
+</details>
 
 4. **Training**: The model was trained using the Ultralytics Hub's infrastructure, optimizing for accuracy in detecting and localizing garbage objects in aerial imagery.
 
 5. **Model Metrics** :
 <img src="src/eval.png" alt="Model Evaluation Metrics" style="width: 80%; max-width: 1000px;">  
 
-<img src="src/loss.png" alt="Model Loss Metrics" style="width: 80%; max-width: 1000px;">  
+<details>
+  <summary><strong>Model Loss Metrics</strong></summary>
+    <img src="src/loss.png" alt="Model Loss Metrics" style="width: 80%; max-width: 1000px;">  
+</details>
 
-<img src="src/results.png" alt="Model Evaluation Result" style="width: 80%; max-width: 1000px;">  
+<details>
+  <summary><strong>Model Result Evaluations</strong></summary>
+    <img src="src/results.png" alt="Model Evaluation Result" style="width: 80%; max-width: 1000px;">
+</details>
 
 ---
 
