@@ -82,13 +82,25 @@ Dependencies Installation:
 
 ## **Simulation Testing Environment** 🧪
 
-<img src="testing/testing_1.jpg" alt="Testing 1" style="width: 80%; max-width: 1000px;">  
+<details>
+  <summary><strong>Testing Environment 1</strong></summary>
+  <img src="testing/testing_1.jpg" alt="Testing 1" style="width: 80%; max-width: 1000px;">
+</details>
 
-<img src="testing/testing_2.jpg" alt="Testing 2" style="width: 80%; max-width: 1000px;">  
+<details>
+  <summary><strong>Testing Environment 2</strong></summary>
+  <img src="testing/testing_2.jpg" alt="Testing 2" style="width: 80%; max-width: 1000px;">
+</details>
 
-<img src="testing/testing_3.jpg" alt="Testing 3" style="width: 80%; max-width: 1000px;">  
+<details>
+  <summary><strong>Testing Environment 3</strong></summary>
+  <img src="testing/testing_3.jpg" alt="Testing 3" style="width: 80%; max-width: 1000px;">
+</details>
 
-<img src="testing/testing_4.jpg" alt="Testing 4" style="width: 80%; max-width: 1000px;">  
+<details>
+  <summary><strong>Testing Environment 4</strong></summary>
+  <img src="testing/testing_4.jpg" alt="Testing 4" style="width: 80%; max-width: 1000px;">
+</details>
 
 ---
 
