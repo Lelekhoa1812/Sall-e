@@ -118,22 +118,22 @@ Dependencies Installation:
 
 <details>
   <summary><strong>Detection Environment 1</strong></summary>
-  <img src="testing/detect_1.jpg" alt="Detection 1" style="width: 80%; max-width: 1000px;">
+  <img src="detect/detect_1.jpg" alt="Detection 1" style="width: 80%; max-width: 1000px;">
 </details>
 
 <details>
   <summary><strong>Detection Environment 2</strong></summary>
-  <img src="testing/detect_2.jpg" alt="Detection 2" style="width: 80%; max-width: 1000px;">
+  <img src="detect/detect_2.jpg" alt="Detection 2" style="width: 80%; max-width: 1000px;">
 </details>
 
 <!-- <details>
   <summary><strong>Detection Environment 3</strong></summary>
-  <img src="testing/detect_3.jpg" alt="Detection 3" style="width: 80%; max-width: 1000px;">
+  <img src="detect/detect_3.jpg" alt="Detection 3" style="width: 80%; max-width: 1000px;">
 </details>
 
 <details>
   <summary><strong>Detection Environment 4</strong></summary>
-  <img src="testing/detect_4.jpg" alt="Detection 4" style="width: 80%; max-width: 1000px;">
+  <img src="detect/detect_4.jpg" alt="Detection 4" style="width: 80%; max-width: 1000px;">
 </details> -->
 
 ---
