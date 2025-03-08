@@ -126,7 +126,7 @@ Dependencies Installation:
   <img src="testing/detect_2.jpg" alt="Detection 2" style="width: 80%; max-width: 1000px;">
 </details>
 
-<details>
+<!-- <details>
   <summary><strong>Detection Environment 3</strong></summary>
   <img src="testing/detect_3.jpg" alt="Detection 3" style="width: 80%; max-width: 1000px;">
 </details>
@@ -134,7 +134,7 @@ Dependencies Installation:
 <details>
   <summary><strong>Detection Environment 4</strong></summary>
   <img src="testing/detect_4.jpg" alt="Detection 4" style="width: 80%; max-width: 1000px;">
-</details>
+</details> -->
 
 ---
 
