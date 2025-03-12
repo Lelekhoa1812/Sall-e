@@ -104,12 +104,12 @@ Dependencies Installation:
 
 <details>
   <summary><strong>Testing Real Environment 1</strong></summary>
-  <img src="testing/testing_3.jpg" alt="Testing 3" style="width: 80%; max-width: 1000px;">
+  <img src="testing/testing_5.jpg" alt="Testing 3" style="width: 80%; max-width: 1000px;">
 </details>
 
 <details>
   <summary><strong>Testing Real Environment 2</strong></summary>
-  <img src="testing/testing_4.jpg" alt="Testing 4" style="width: 80%; max-width: 1000px;">
+  <img src="testing/testing_6.jpg" alt="Testing 4" style="width: 80%; max-width: 1000px;">
 </details>
 
 ---
@@ -128,12 +128,12 @@ Dependencies Installation:
 
 <details>
   <summary><strong>Detection Real Environment 1</strong></summary>
-  <img src="detect/detect_3.jpg" alt="Detection 3" style="width: 80%; max-width: 1000px;">
+  <img src="detect/detect_5.jpg" alt="Detection 3" style="width: 80%; max-width: 1000px;">
 </details>
 
 <details>
   <summary><strong>Detection Real Environment 2</strong></summary>
-  <img src="detect/detect_4.jpg" alt="Detection 4" style="width: 80%; max-width: 1000px;">
+  <img src="detect/detect_6.jpg" alt="Detection 4" style="width: 80%; max-width: 1000px;">
 </details>
 
 ---
