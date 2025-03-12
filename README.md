@@ -26,7 +26,7 @@ To evaluate the model's performance in realistic scenarios, we developed a Pytho
 
 ---
 
-## **Simulation Testing Environment** 🧪
+## **Simulation Images Testing Environment** 🧪
 <details>
   <summary><strong>List Testing Images</strong></summary>
 
@@ -96,7 +96,7 @@ To equip Sall-e with the capability to detect marine debris, we employed the YOL
 
 ---
 
-## **Simulation Garbage Self-trained Model Detection** 🔍
+## **Simulation Images Garbage Self-trained Model Detection** 🔍
 <details>
   <summary><strong>List Self-trained Detection Images</strong></summary>
 
@@ -178,6 +178,64 @@ The **Sall-e** project integrates multiple models to enhance garbage detection u
 
 This multi-model approach provides better benchmarking and performance analysis for garbage detection in oceanic environments, improving robustness across different detection architectures. 
 </details>
+
+---
+
+## **Garbage Collection Simulation Video** 🎥
+The **Garbage Collection Simulation** visualizes how an autonomous floating robot, **Sall-e**, navigates an ocean environment to collect garbage using AI-based object detection.
+
+### **Simulation Features**:
+- The robot starts at the **top-left corner** of the environment.
+- It detects **the nearest garbage object** and moves towards it.
+- The robot can **move diagonally** and **rotates accordingly** based on its movement direction.
+- The robot moves at **40 pixels per second**.
+- Once the robot reaches a garbage object, the object is **flagged as collected** and removed from the scene.
+- The simulation continues until all objects are collected or the user stops the program.
+## Multi-Model Garbage Detection
+
+The **Sall-e** project integrates multiple models to enhance garbage detection using computer vision. The implementation leverages three different object detection models:
+
+### 1. Self-Trained Model
+- This model was trained using **Ultralytics YOLOv11m** with a dataset of oceanic garbage images.
+- The dataset was sourced from **Roboflow** and fine-tuned on labeled drone-captured images.
+- The trained model is stored in `garbage_detector.pt` and performs inference on the test images, saving results in the `detect1` folder.
+
+### 2. External Model 1: YOLOv5-Based Waste Detection
+- This model is sourced from **Hugging Face** and fine-tuned for waste classification.
+- Repository: [YOLOv5 Waste Detection Model](https://huggingface.co/turhancan97/yolov5-detect-trash-classification)
+- This model runs on YOLOv5 and processes test images, saving results in the `detect2` folder.
+
+### 3. External Model 2: DETR-Based Waste Detection
+- This model is built on **DEtection TRansformer (DETR)** architecture and fine-tuned on waste detection.
+- Repository: [DETR Waste Detection Model](https://huggingface.co/Yorai/detr-resnet-50_finetuned_detect-waste)
+- The model utilizes a **ResNet-50** backbone and processes images using PyTorch and the `transformers` library.
+- Detection results are saved in the `detect3` folder.
+
+### Running Multi-Model Inference
+- The script runs all three models sequentially on test images stored in `/testing`.
+- The results from each model are combined and visualized, with bounding boxes and confidence scores labeled.
+- Final detection outputs from all three models are stored in the `detect` folder for comparison and evaluation.
+
+This multi-model approach provides better benchmarking and performance analysis for garbage detection in oceanic environments, improving robustness across different detection architectures.
+
+## Garbage Collection Simulation
+The **Garbage Collection Simulation** visualizes how an autonomous floating robot, **Sall-e**, navigates an ocean environment to collect garbage using AI-based object detection.
+
+### **Simulation Features**:
+- The robot starts at the **top-left corner** of the environment.
+- It detects **the nearest garbage object** and moves towards it.
+- The robot can **move diagonally** and **rotates accordingly** based on its movement direction.
+- The robot moves at **40 pixels per second**.
+- Once the robot reaches a garbage object, the object is **flagged as collected** and removed from the scene.
+- The simulation continues until all objects are collected or the user stops the program.
+- The simulation is recorded as a **video file**:
+  
+  <video width="640" height="640" controls>
+    <source src="simulation/simulation.mp4" type="video/mp4">
+    Your browser does not support the video tag.
+  </video>
+
+This simulation helps visualize the efficiency of the garbage collection system and showcases the AI-driven movement strategy of the Sall-e robot.
 
 ---
 

@@ -109,7 +109,7 @@ while True:
     alpha_s = robot.image_np[:, :, 3] / 255.0
     alpha_l = 1.0 - alpha_s
     for c in range(3):
-        frame[ry:ry+20, rx:rx+20, c] = (alpha_s * robot.image_np[:, :, c] + alpha_l * frame[ry:ry+20, rx:rx+20, c])
+        frame[ry:ry+40, rx:rx+40, c] = (alpha_s * robot.image_np[:, :, c] + alpha_l * frame[ry:ry+40, rx:rx+40, c])
     
     # Continously writing the robot movement until all garbage are collected
     out.write(frame)
