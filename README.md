@@ -29,6 +29,7 @@ To evaluate the model's performance in realistic scenarios, we developed a Pytho
 ## **Simulation Testing Environment** 🧪
 <details>
   <summary><strong>List Testing Images</strong></summary>
+
   <details>
     <summary><strong>Testing Synthetic Environment 1</strong></summary>
     <img src="testing/testing_1.jpg" alt="Testing 1" style="width: 80%; max-width: 1000px;">
@@ -53,6 +54,7 @@ To evaluate the model's performance in realistic scenarios, we developed a Pytho
     <summary><strong>Testing Real Environment 2</strong></summary>
     <img src="testing/testing_6.jpg" alt="Testing 6" style="width: 80%; max-width: 1000px;">
   </details>
+
 </details>
 
 ---
@@ -97,6 +99,7 @@ To equip Sall-e with the capability to detect marine debris, we employed the YOL
 ## **Simulation Garbage Self-trained Model Detection** 🔍
 <details>
   <summary><strong>List Self-trained Detection Images</strong></summary>
+
   <details>
     <summary><strong>Detection Synthetic Environment 1</strong></summary>
     <img src="detect1/detect_1.jpg" alt="Detection 1" style="width: 80%; max-width: 1000px;">
@@ -121,6 +124,7 @@ To equip Sall-e with the capability to detect marine debris, we employed the YOL
     <summary><strong>Detection Real Environment 2</strong></summary>
     <img src="detect1/detect_6.jpg" alt="Detection 6" style="width: 80%; max-width: 1000px;">
   </details>
+
 </details>
 
 ---
@@ -139,6 +143,40 @@ The **Sall-e** project integrates multiple models to enhance garbage detection u
   <li>This model is built on <strong>DEtection TRansformer (DETR)</strong> architecture and fine-tuned on waste detection.</li>
   <li>Repository: <a href="https://huggingface.co/Yorai/detr-resnet-50_finetuned_detect-waste">DETR Waste Detection Model</a></li>
   <li>The model utilizes a <strong>ResNet-50</strong> backbone and processes images using PyTorch and the <italic>transformers</italic> library.</li>
+</details>
+
+---
+
+## **Simulation Garbage Multi-modal Detection** 🤝
+<details>
+  <summary><strong>List Multi-modal Detection with Annotation</strong></summary>
+
+  <details>
+    <summary><strong>Detection Synthetic Environment 1</strong></summary>
+    <img src="detect/detect_1.jpg" alt="Detection multi 1" style="width: 80%; max-width: 1000px;">
+  </details>
+  <details>
+    <summary><strong>Detection Synthetic Environment 2</strong></summary>
+    <img src="detect/detect_2.jpg" alt="Detection multi 2" style="width: 80%; max-width: 1000px;">
+  </details>
+  <details>
+    <summary><strong>Detection Synthetic Environment 3</strong></summary>
+    <img src="detect/detect_3.jpg" alt="Detection multi 3" style="width: 80%; max-width: 1000px;">
+  </details>
+  <details>
+    <summary><strong>Detection Synthetic Environment 4</strong></summary>
+    <img src="detect/detect_4.jpg" alt="Detection multi 4" style="width: 80%; max-width: 1000px;">
+  </details>
+  <details>
+    <summary><strong>Detection Real Environment 1</strong></summary>
+    <img src="detect/detect_5.jpg" alt="Detection multi 5" style="width: 80%; max-width: 1000px;">
+  </details>
+  <details>
+    <summary><strong>Detection Real Environment 2</strong></summary>
+    <img src="detect/detect_6.jpg" alt="Detection multi 6" style="width: 80%; max-width: 1000px;">
+  </details>
+
+This multi-model approach provides better benchmarking and performance analysis for garbage detection in oceanic environments, improving robustness across different detection architectures. 
 </details>
 
 ---
