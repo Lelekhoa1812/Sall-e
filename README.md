@@ -191,7 +191,8 @@ The **Garbage Collection Simulation** visualizes how an autonomous floating robo
 - The robot moves at **40 pixels per second**.
 - Once the robot reaches a garbage object, the object is **flagged as collected** and removed from the scene.
 - The simulation continues until all objects are collected or the user stops the program.
-[Download Simulation](simulation/simulation.mp4){:download}
+
+<a href="simulation/simulation.mp4" download>Download Simulation</a>
 
 This simulation helps visualize the efficiency of the garbage collection system and showcases the AI-driven movement strategy of the Sall-e robot.
 
