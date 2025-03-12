@@ -1,3 +1,9 @@
 opencv-python
 pillow-avif-plugin
 ultralytics
+transformers
+torch
+Pillow
+numpy
+git-lfs
+yolov5

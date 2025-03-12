@@ -5,7 +5,7 @@ import os
 
 # Define paths
 TESTING_FOLDER = "/testing"
-DETECT_FOLDER = "/detect"
+DETECT_FOLDER = "/detect1"
 MODEL_FOLDER = "model"
 MODEL_PATH = os.path.join(MODEL_FOLDER, "garbage_detector.pt")
 
@@ -44,4 +44,4 @@ for i in range(1, 5):
     cv2.imwrite(detect_path, img)
     print(f"Detection completed for {image_path}, saved as {detect_path}")
 
-print("All detections completed and saved in the detect folder.")
+print("All detections completed and saved in the detect1 folder.")

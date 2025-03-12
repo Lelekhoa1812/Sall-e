@@ -14,7 +14,50 @@ The "Sall-e" project aims to address this issue by developing an integrated syst
 
 ---
 
-## **Approach to Model Training** ⚡
+## **Synthetic Testing Image Generation** 📸
+
+To evaluate the model's performance in realistic scenarios, we developed a Python script `synthetic.py` to create synthetic testing images. The script performs the following tasks:
+
+1. **Image Preparation**: Numerous ocean background image (`ocean 1-4 images`) of different sizing is resized to 640×640 pixels to match the model's input requirements.
+
+2. **Object Extraction**: Randomly selects 10 images from the `dataset/test/images` directory and uses their corresponding YOLO-format annotation files from `dataset/test/labels` to extract labeled garbage objects.
+
+3. **Synthetic Image Creation**: Pastes the extracted objects onto the resized ocean background at random locations, generating three synthetic testing images. These images are saved in the `testing` directory for subsequent evaluation.
+
+---
+
+## **Simulation Testing Environment** 🧪
+<details>
+  <summary><strong>List Testing Images</strong></summary>
+  <details>
+    <summary><strong>Testing Synthetic Environment 1</strong></summary>
+    <img src="testing/testing_1.jpg" alt="Testing 1" style="width: 80%; max-width: 1000px;">
+  </details>
+  <details>
+    <summary><strong>Testing Synthetic Environment 2</strong></summary>
+    <img src="testing/testing_2.jpg" alt="Testing 2" style="width: 80%; max-width: 1000px;">
+  </details>
+  <details>
+    <summary><strong>Testing Synthetic Environment 3</strong></summary>
+    <img src="testing/testing_3.jpg" alt="Testing 3" style="width: 80%; max-width: 1000px;">
+  </details>
+  <details>
+    <summary><strong>Testing Synthetic Environment 4</strong></summary>
+    <img src="testing/testing_4.jpg" alt="Testing 4" style="width: 80%; max-width: 1000px;">
+  </details>
+  <details>
+    <summary><strong>Testing Real Environment 1</strong></summary>
+    <img src="testing/testing_5.jpg" alt="Testing 5" style="width: 80%; max-width: 1000px;">
+  </details>
+  <details>
+    <summary><strong>Testing Real Environment 2</strong></summary>
+    <img src="testing/testing_6.jpg" alt="Testing 6" style="width: 80%; max-width: 1000px;">
+  </details>
+</details>
+
+---
+
+## **Approach to Model Self-Training** ⚡
 
 To equip Sall-e with the capability to detect marine debris, we employed the YOLOv11m object detection model, leveraging the Ultralytics Hub for training and deployment. The training process involved the following steps:
 
@@ -51,28 +94,52 @@ To equip Sall-e with the capability to detect marine debris, we employed the YOL
 
 ---
 
-## **Synthetic Testing Image Generation** 📸
-
-To evaluate the model's performance in realistic scenarios, we developed a Python script `synthetic.py` to create synthetic testing images. The script performs the following tasks:
-
-1. **Image Preparation**: An ocean background image (`ocean.jpg`) of 360×540 pixels is resized to 640×640 pixels to match the model's input requirements.
-
-2. **Object Extraction**: Randomly selects 10 images from the `dataset/test/images` directory and uses their corresponding YOLO-format annotation files from `dataset/test/labels` to extract labeled garbage objects.
-
-3. **Synthetic Image Creation**: Pastes the extracted objects onto the resized ocean background at random locations, generating three synthetic testing images. These images are saved in the `testing` directory for subsequent evaluation.
+## **Simulation Garbage Self-trained Model Detection** 🔍
+<details>
+  <summary><strong>List Self-trained Detection Images</strong></summary>
+  <details>
+    <summary><strong>Detection Synthetic Environment 1</strong></summary>
+    <img src="detect1/detect_1.jpg" alt="Detection 1" style="width: 80%; max-width: 1000px;">
+  </details>
+  <details>
+    <summary><strong>Detection Synthetic Environment 2</strong></summary>
+    <img src="detect1/detect_2.jpg" alt="Detection 2" style="width: 80%; max-width: 1000px;">
+  </details>
+  <details>
+    <summary><strong>Detection Synthetic Environment 3</strong></summary>
+    <img src="detect1/detect_3.jpg" alt="Detection 3" style="width: 80%; max-width: 1000px;">
+  </details>
+  <details>
+    <summary><strong>Detection Synthetic Environment 4</strong></summary>
+    <img src="detect1/detect_4.jpg" alt="Detection 4" style="width: 80%; max-width: 1000px;">
+  </details>
+  <details>
+    <summary><strong>Detection Real Environment 1</strong></summary>
+    <img src="detect1/detect_5.jpg" alt="Detection 5" style="width: 80%; max-width: 1000px;">
+  </details>
+  <details>
+    <summary><strong>Detection Real Environment 2</strong></summary>
+    <img src="detect1/detect_6.jpg" alt="Detection 6" style="width: 80%; max-width: 1000px;">
+  </details>
+</details>
 
 ---
 
-## **Dataset Acknowledgment and Statistics** 📊
+## **Multi-Model Garbage Detection** 🔄
+The **Sall-e** project integrates multiple models to enhance garbage detection using computer vision. The implementation leverages three different object detection models:
 
-We acknowledge the use of the **[Garbage Detection UAV](https://en.wikipedia.org/wiki/Great_Pacific_Garbage_Patch)** dataset from Roboflow Universe in our project. The dataset's key statistics are as follows:
+<details>
+  <summary><strong>External Model 1: YOLOv5-Based Waste Detection</strong></summary>
+  <li>This model is sourced from <strong>Hugging Face</strong> and fine-tuned for waste classification.</li>
+  <li>Repository: <a href="https://huggingface.co/turhancan97/yolov5-detect-trash-classification">YOLOv5 Waste Detection Model</a></li>
+</details>
 
-- **Total Images**: 4,486
-- **Training Set**: 70% (3,140 images)
-- **Validation Set**: 20% (897 images)
-- **Test Set**: 10% (449 images)
-
-The dataset encompasses a diverse range of garbage types, providing a robust foundation for training the object detection model.
+<details>
+  <summary><strong>External Model 2: DETR-Based Waste Detection</strong></summary>
+  <li>This model is built on <strong>DEtection TRansformer (DETR)</strong> architecture and fine-tuned on waste detection.</li>
+  <li>Repository: <a href="https://huggingface.co/Yorai/detr-resnet-50_finetuned_detect-waste">DETR Waste Detection Model</a></li>
+  <li>The model utilizes a <strong>ResNet-50</strong> backbone and processes images using PyTorch and the <italic>transformers</italic> library.</li>
+</details>
 
 ---
 
@@ -80,61 +147,23 @@ The dataset encompasses a diverse range of garbage types, providing a robust fou
 
 Clone this project:
 ```bash
-    git clone https://github.com/Lelekhoa1812/Sall-e.git
+  git clone https://github.com/Lelekhoa1812/Sall-e.git
 ```
 
 Dependencies Installation:  
 ```bash
-    pip install -r requirements.txt
+  pip install -r requirements.txt
 ```
 
----
+Run self-trained detection:  
+```bash
+  python3 detect.py
+```
 
-## **Simulation Testing Environment** 🧪
-
-<details>
-  <summary><strong>Testing Synthetic Environment 1</strong></summary>
-  <img src="testing/testing_1.jpg" alt="Testing 1" style="width: 80%; max-width: 1000px;">
-</details>
-
-<details>
-  <summary><strong>Testing Synthetic Environment 2</strong></summary>
-  <img src="testing/testing_2.jpg" alt="Testing 2" style="width: 80%; max-width: 1000px;">
-</details>
-
-<details>
-  <summary><strong>Testing Real Environment 1</strong></summary>
-  <img src="testing/testing_5.jpg" alt="Testing 3" style="width: 80%; max-width: 1000px;">
-</details>
-
-<details>
-  <summary><strong>Testing Real Environment 2</strong></summary>
-  <img src="testing/testing_6.jpg" alt="Testing 4" style="width: 80%; max-width: 1000px;">
-</details>
-
----
-
-## **Simulation Garbage Detection** 🔍
-
-<details>
-  <summary><strong>Detection Synthetic Environment 1</strong></summary>
-  <img src="detect/detect_1.jpg" alt="Detection 1" style="width: 80%; max-width: 1000px;">
-</details>
-
-<details>
-  <summary><strong>Detection Synthetic Environment 2</strong></summary>
-  <img src="detect/detect_2.jpg" alt="Detection 2" style="width: 80%; max-width: 1000px;">
-</details>
-
-<details>
-  <summary><strong>Detection Real Environment 1</strong></summary>
-  <img src="detect/detect_5.jpg" alt="Detection 3" style="width: 80%; max-width: 1000px;">
-</details>
-
-<details>
-  <summary><strong>Detection Real Environment 2</strong></summary>
-  <img src="detect/detect_6.jpg" alt="Detection 4" style="width: 80%; max-width: 1000px;">
-</details>
+Run multi-modal detection:  
+```bash
+  python3 multimodal.py
+```
 
 ---
 
@@ -150,6 +179,7 @@ Dependencies Installation:
 /crop.py               # crop object from data sample
 /synthetic.py          # generate synthetic testing img simulating ocean top-view
 /detect.py             # generate img simulating garbage detection on ocean
+/Inference.ipynb       # example usages of 3 external models (from HF) for backup
 /crop/                 # cropped .png images sample from various garbage classes
   ├── plastic/
   ├── metal/
@@ -157,15 +187,8 @@ Dependencies Installation:
   ├── carton/
   ├── ...
 /testing/
-  ├── testing_1.jpg
-  ├── testing_2.jpg
-  ├── testing_3.jpg
-  ├── testing_4.jpg
 /detect/
-  ├── detect_1.jpg
-  ├── detect_2.jpg
-  ├── detect_3.jpg
-  ├── detect_4.jpg
+/detect1/
 /model/
   ├── garbage_detector.pt
 /sample/
@@ -179,6 +202,19 @@ Dependencies Installation:
   ├── loss.png 
 /README
 ```
+
+---
+
+## **Dataset Acknowledgment and Statistics** 📊
+
+We acknowledge the use of the **[Garbage Detection UAV](https://en.wikipedia.org/wiki/Great_Pacific_Garbage_Patch)** dataset from Roboflow Universe in our project. The dataset's key statistics are as follows:
+
+- **Total Images**: 4,486
+- **Training Set**: 70% (3,140 images)
+- **Validation Set**: 20% (897 images)
+- **Test Set**: 10% (449 images)
+
+The dataset encompasses a diverse range of garbage types, providing a robust foundation for training the object detection model.
 
 ---
 
