@@ -23,13 +23,28 @@ MODEL_PATH_SELF = os.path.join(MODEL_FOLDER, "garbage_detector.pt")
 MODEL_PATH_YOLO5 = os.path.join(MODEL_FOLDER, "yolov5-detect-trash-classification.pt")
 MODEL_PATH_DETR = os.path.join(MODEL_FOLDER, "pytorch_model.bin")
 
+# Ensure temp folder `uploads` exist
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+
+# Ensure cache directory exists and set correct permissions
+CACHE_DIR = "/app/cache"
+os.makedirs(CACHE_DIR, exist_ok=True)
+os.chmod(CACHE_DIR, 0o777)  # Set write permissions
+
+# Set Hugging Face cache directory to a writable location
+os.environ["TRANSFORMERS_CACHE"] = CACHE_DIR
+os.environ["HF_HOME"] = CACHE_DIR
 
 # Load models
 model_self = YOLO(MODEL_PATH_SELF)
 model_yolo5 = yolov5.load(MODEL_PATH_YOLO5)
-processor_detr = DetrImageProcessor.from_pretrained("facebook/detr-resnet-50", local_files_only=True)
-model_detr = DetrForObjectDetection.from_pretrained("facebook/detr-resnet-50", local_files_only=True)
+processor_detr = DetrImageProcessor.from_pretrained("facebook/detr-resnet-50", local_files_only=True, cache_dir=CACHE_DIR)
+model_detr = DetrForObjectDetection.from_pretrained("facebook/detr-resnet-50", local_files_only=True, cache_dir=CACHE_DIR)
+
+# Re-trigger setup, ensure directory setup before starting up the app
+import setup
+setup.print_model()
+setup.print_cache()
 
 # HTML Content for UI
 HTML_CONTENT = """
