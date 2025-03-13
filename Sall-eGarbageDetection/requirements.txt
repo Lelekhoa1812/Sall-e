@@ -1,7 +1,7 @@
 # Image processing
-opencv-python
+opencv-python-headless
 pillow-avif-plugin
-Pillow
+pillow
 numpy
 
 # Model setup
@@ -9,10 +9,11 @@ ultralytics
 transformers
 torch
 torchvision
+torchaudio
 git-lfs
 yolov5
 
 # Server startup
 uvicorn
 fastapi
-huggingface_hub
+huggingface_hub==0.14.1
