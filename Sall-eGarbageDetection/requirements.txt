@@ -1,0 +1,18 @@
+# Image processing
+opencv-python
+pillow-avif-plugin
+Pillow
+numpy
+
+# Model setup
+ultralytics
+transformers
+torch
+torchvision
+git-lfs
+yolov5
+
+# Server startup
+uvicorn
+fastapi
+huggingface_hub
