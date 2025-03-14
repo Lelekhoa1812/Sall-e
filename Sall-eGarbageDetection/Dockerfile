@@ -44,7 +44,6 @@ COPY --chown=user . $HOME/app
 
 # ✅ Copy the model download script with correct permission
 COPY download_models.py /home/user/app/download_models.py
-RUN chmod +x /home/user/app/download_models.py
 RUN python /home/user/app/download_models.py
 
 
