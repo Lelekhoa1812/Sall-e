@@ -16,30 +16,43 @@ from transformers import DetrImageProcessor, DetrForObjectDetection
 app = FastAPI()
 
 # Define paths
-UPLOAD_FOLDER = "uploads"
-OUTPUT_VIDEO = "simulation/simulation.mp4"
-MODEL_FOLDER = "model"
-MODEL_PATH_SELF = os.path.join(MODEL_FOLDER, "garbage_detector.pt")
-MODEL_PATH_YOLO5 = os.path.join(MODEL_FOLDER, "yolov5-detect-trash-classification.pt")
-MODEL_PATH_DETR = os.path.join(MODEL_FOLDER, "pytorch_model.bin")
+UPLOAD_FOLDER = "/dev/shm/uploads"
+OUTPUT_VIDEO = "/dev/shm/simulation.mp4"
 
-# Ensure temp folder `uploads` exist
+# Ensure upload folder exists
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
-# Ensure cache directory exists and set correct permissions
-CACHE_DIR = "/app/cache"
-os.makedirs(CACHE_DIR, exist_ok=True)
-os.chmod(CACHE_DIR, 0o777)  # Set write permissions
-
-# Set Hugging Face cache directory to a writable location
+# ✅ Set Hugging Face cache directory to a writable location
+CACHE_DIR = "/dev/shm"
 os.environ["TRANSFORMERS_CACHE"] = CACHE_DIR
 os.environ["HF_HOME"] = CACHE_DIR
 
-# Load models
-model_self = YOLO(MODEL_PATH_SELF)
-model_yolo5 = yolov5.load(MODEL_PATH_YOLO5)
-processor_detr = DetrImageProcessor.from_pretrained("facebook/detr-resnet-50", local_files_only=True, cache_dir=CACHE_DIR)
-model_detr = DetrForObjectDetection.from_pretrained("facebook/detr-resnet-50", local_files_only=True, cache_dir=CACHE_DIR)
+# Define model paths
+MODEL_FOLDER = "/home/user/app/model"
+MODEL_PATH_SELF = os.path.join(MODEL_FOLDER, "garbage_detector.pt")
+MODEL_PATH_YOLO5 = os.path.join(MODEL_FOLDER, "yolov5-detect-trash-classification.pt")
+MODEL_PATH_DETR = os.path.join(MODEL_FOLDER, "detr")
+
+# ✅ Load models safely from the pre-downloaded directory
+print("🔄 Loading models...")
+try:
+    # Self-trained YOLO model
+    model_self = YOLO(MODEL_PATH_SELF)
+    print("✅ Self-trained YOLO model loaded.")
+
+    # YOLOv5 Model
+    model_yolo5 = yolov5.load(MODEL_PATH_YOLO5)
+    print("✅ YOLOv5 model loaded.")
+
+    # DETR Model
+    processor_detr = DetrImageProcessor.from_pretrained(MODEL_PATH_DETR)
+    model_detr = DetrForObjectDetection.from_pretrained(MODEL_PATH_DETR)
+    print("✅ DETR model loaded.")
+except Exception as e:
+    print(f"❌ Error loading models: {e}")
+
+print("✅ Model loading complete. Running application.")
+
 
 # Re-trigger setup, ensure directory setup before starting up the app
 import setup
@@ -151,17 +164,20 @@ def process_image(image_path):
     detections = []
     
     # Self-trained YOLOv11m
+    print("🔍 Running detection with Self-trained YOLO model...")
     results_self = model_self(image)
     for result in results_self:
         for box in result.boxes:
             detections.append(box.xyxy[0].tolist())
     
     # YOLOv5 Model
+    print("🔍 Running detection with YOLOv5 model...")
     results_yolo5 = model_yolo5(image, size=416)
     for result in results_yolo5.pred[0]:
         detections.append(result[:4].tolist())
     
     # DETR Model
+    print("🔍 Running detection with DETR model...")
     image_pil = Image.open(image_path).convert("RGB")
     inputs = processor_detr(images=image_pil, return_tensors="pt")
     with torch.no_grad():
@@ -170,6 +186,7 @@ def process_image(image_path):
     results_detr = processor_detr.post_process_object_detection(outputs, target_sizes=target_sizes, threshold=0.5)[0]
     for box in results_detr["boxes"]:
         detections.append(box.tolist())
+    print(f"✅ DETR detected {len(detections)} objects.")
     
     # Draw bounding boxes and create video
     video_writer = cv2.VideoWriter(OUTPUT_VIDEO, cv2.VideoWriter_fourcc(*"mp4v"), 10.0, (640, 640))  # 10 FPS lower resource

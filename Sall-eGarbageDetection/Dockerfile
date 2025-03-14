@@ -1,40 +1,65 @@
 FROM python:3.9
 
+# Set working directory inside the container
 WORKDIR /app
 
-# Install system dependencies for OpenCV and FontConfig fix
-RUN apt-get update && apt-get install -y libgl1-mesa-glx libglib2.0-0 fontconfig && rm -rf /var/lib/apt/lists/*
+# ✅ Install system dependencies before switching users
+RUN apt-get update && apt-get install -y \
+    libgl1-mesa-glx libglib2.0-0 fontconfig && \
+    rm -rf /var/lib/apt/lists/*
 
-# Install Python dependencies
+# ✅ Copy entrypoint script and make it executable
+COPY entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
+
+# ✅ Create a non-root user for better security
+RUN useradd -m -u 1000 user
+USER user
+ENV HOME=/home/user
+WORKDIR $HOME/app
+
+# ✅ Install Python dependencies
 COPY requirements.txt ./
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Explicitly install a compatible version of huggingface_hub
-RUN pip install --no-cache-dir huggingface_hub==0.14.1 transformers yolov5 ultralytics torch torchvision torchaudio --extra-index-url https://download.pytorch.org/whl/cpu
+# ✅ Install Hugging Face CLI and required ML dependencies
+RUN pip install --no-cache-dir \
+    huggingface_hub==0.14.1 transformers yolov5 ultralytics torch torchvision torchaudio \
+    --extra-index-url https://download.pytorch.org/whl/cpu
 
-# Create model folder and download models
-RUN mkdir -p /app/model /app/cache
-# Grant cache permission
-RUN chmod -R 777 /app/cache 
+# ✅ Ensure Hugging Face CLI is accessible
+ENV PATH="/home/user/.local/bin:$PATH"
 
-# Set environment variables for writable cache
+# ✅ Create model folder (cache is now handled via /dev/shm)
+RUN mkdir -p /home/user/app/model
+
+# ✅ Set writable environment variables
 ENV MPLCONFIGDIR="/tmp/matplotlib"
 ENV YOLO_CONFIG_DIR="/tmp/Ultralytics"
-ENV TRANSFORMERS_CACHE="/app/cache"
-ENV HF_HOME="/app/cache"
+ENV TRANSFORMERS_CACHE="/dev/shm"
+ENV HF_HOME="/dev/shm"
 
-COPY . .
+# ✅ Copy source code **after** user switch
+COPY --chown=user . $HOME/app
 
-# Download models from Hugging Face to the writable directory
-RUN HF_HOME=/app/cache wget -O /app/model/garbage_detector.pt https://huggingface.co/BinKhoaLe1812/Garbage_Detection/resolve/main/garbage_detector.pt
-RUN HF_HOME=/app/cache wget -O /app/model/detr-resnet-50_finetuned_detect-waste.bin https://huggingface.co/Yorai/detr-resnet-50_finetuned_detect-waste/resolve/main/pytorch_model.bin
-RUN HF_HOME=/app/cache wget -O /app/model/yolov5-detect-trash-classification.pt https://huggingface.co/turhancan97/yolov5-detect-trash-classification/resolve/main/yolov5s.pt
+# ✅ Copy the model download script with correct permission
+COPY download_models.py /home/user/app/download_models.py
+RUN chmod +x /home/user/app/download_models.py
+RUN python /home/user/app/download_models.py
 
 
-# Check model and cache directory setup
-# RUN python setup.py
+# ✅ Download other necessary models
+RUN wget -O $HOME/app/model/garbage_detector.pt https://huggingface.co/BinKhoaLe1812/Garbage_Detection/resolve/main/garbage_detector.pt
+RUN wget -O $HOME/app/model/yolov5-detect-trash-classification.pt https://huggingface.co/turhancan97/yolov5-detect-trash-classification/resolve/main/yolov5s.pt
 
-# Expose port
+# ✅ Ensure correct file permissions
+RUN chmod -R 777 $HOME/app
+
+# ✅ Verify model setup before running the app
+RUN python setup.py
+
+# ✅ Expose FastAPI port
 EXPOSE 7860
 
-CMD ["uvicorn", "app:app", "--host", "0.0.0.0", "--port", "7860"]
+# ✅ Start FastAPI application using the entrypoint script
+ENTRYPOINT ["/entrypoint.sh"]
