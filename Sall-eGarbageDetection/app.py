@@ -16,14 +16,14 @@ from transformers import DetrImageProcessor, DetrForObjectDetection
 app = FastAPI()
 
 # Define paths
-UPLOAD_FOLDER = "/dev/shm/uploads"
-OUTPUT_VIDEO = "/dev/shm/simulation.mp4"
+UPLOAD_FOLDER = "/home/user/app/cache/uploads"
+OUTPUT_VIDEO = "/home/user/app/cache/simulation.mp4"
 
 # Ensure upload folder exists
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
 # ✅ Set Hugging Face cache directory to a writable location
-CACHE_DIR = "/dev/shm"
+CACHE_DIR = "/home/user/app/cache"
 os.environ["TRANSFORMERS_CACHE"] = CACHE_DIR
 os.environ["HF_HOME"] = CACHE_DIR
 
@@ -106,6 +106,8 @@ HTML_CONTENT = """
             display: none;
             margin-top: 20px;
             width: 70%;
+            margin-left: auto;
+            margin-right: auto;
             max-width: 640px;
             border-radius: 10px;
             box-shadow: 0px 0px 10px rgba(255, 255, 255, 0.3);

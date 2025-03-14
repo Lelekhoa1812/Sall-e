@@ -3,6 +3,9 @@ FROM python:3.9
 # Set working directory inside the container
 WORKDIR /app
 
+# ✅ Reduce Docker image size by cleaning up unused files
+RUN apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* ~/.cache/
+
 # ✅ Install system dependencies before switching users
 RUN apt-get update && apt-get install -y \
     libgl1-mesa-glx libglib2.0-0 fontconfig && \
@@ -14,38 +17,41 @@ RUN chmod +x /entrypoint.sh
 
 # ✅ Create a non-root user for better security
 RUN useradd -m -u 1000 user
-USER user
-ENV HOME=/home/user
-WORKDIR $HOME/app
 
-# ✅ Install Python dependencies
+# ✅ Switch temporarily to root for installation
+USER root
+ENV HOME=/home/user
+
+# ✅ Install Python dependencies (including `python-multipart`)
 COPY requirements.txt ./
 RUN pip install --no-cache-dir -r requirements.txt
 
 # ✅ Install Hugging Face CLI and required ML dependencies
 RUN pip install --no-cache-dir \
-    huggingface_hub==0.14.1 transformers yolov5 ultralytics torch torchvision torchaudio \
+    huggingface_hub==0.14.1 transformers yolov5 ultralytics torch torchvision torchaudio python-multipart \
     --extra-index-url https://download.pytorch.org/whl/cpu
 
 # ✅ Ensure Hugging Face CLI is accessible
 ENV PATH="/home/user/.local/bin:$PATH"
 
-# ✅ Create model folder (cache is now handled via /dev/shm)
-RUN mkdir -p /home/user/app/model
+# ✅ Create model/cache folder and ensure write permissions
+RUN mkdir -p /home/user/app/model /home/user/app/cache && \
+    chown -R user:user /home/user/app && \
+    chmod -R 777 /home/user/app
 
-# ✅ Set writable environment variables
-ENV MPLCONFIGDIR="/tmp/matplotlib"
-ENV YOLO_CONFIG_DIR="/tmp/Ultralytics"
-ENV TRANSFORMERS_CACHE="/dev/shm"
-ENV HF_HOME="/dev/shm"
+# ✅ Switch to non-root user before copying source code
+USER user
+WORKDIR $HOME/app
 
-# ✅ Copy source code **after** user switch
+# ✅ Copy source code **after** fixing permissions
 COPY --chown=user . $HOME/app
 
-# ✅ Copy the model download script with correct permission
-COPY download_models.py /home/user/app/download_models.py
-RUN python /home/user/app/download_models.py
+# ✅ Copy and execute the model download script
+# COPY download_models.py /home/user/app/download_models.py
+# RUN python /home/user/app/download_models.py
 
+# ✅ Manually download DETR model using `snapshot_download()`
+RUN python -c "from huggingface_hub import snapshot_download; snapshot_download(repo_id='facebook/detr-resnet-50', local_dir='/home/user/app/model/detr', local_dir_use_symlinks=False)"
 
 # ✅ Download other necessary models
 RUN wget -O $HOME/app/model/garbage_detector.pt https://huggingface.co/BinKhoaLe1812/Garbage_Detection/resolve/main/garbage_detector.pt

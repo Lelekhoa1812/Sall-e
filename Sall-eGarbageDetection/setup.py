@@ -1,7 +1,7 @@
 import os
 
 # Dir path
-CACHE_DIR = "/dev/shm"
+CACHE_DIR = "/home/user/app/cache"
 MODEL_DIR = "/home/user/app/model"
 
 # Verify structures:
