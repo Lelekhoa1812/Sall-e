@@ -4,16 +4,21 @@ pillow-avif-plugin
 pillow
 numpy
 
+# Video processing
+ffmpeg-python
+torchvision
+torchaudio
+timm
+
 # Model setup
 ultralytics
 transformers
 torch
-torchvision
-torchaudio
 git-lfs
 yolov5
 
 # Server startup
 uvicorn
 fastapi
+python-multipart
 huggingface_hub==0.14.1

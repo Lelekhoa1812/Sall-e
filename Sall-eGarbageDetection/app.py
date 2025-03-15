@@ -1,5 +1,5 @@
 from fastapi import FastAPI, File, UploadFile
-from fastapi.responses import HTMLResponse, FileResponse
+from fastapi.responses import HTMLResponse, FileResponse, Response, StreamingResponse
 import os
 import shutil
 import cv2
@@ -9,20 +9,24 @@ import uvicorn
 import threading
 import torch
 import yolov5
+import ffmpeg
 from ultralytics import YOLO
 from transformers import DetrImageProcessor, DetrForObjectDetection
+import time
 
 # Initialize FastAPI app
 app = FastAPI()
 
 # Define paths
 UPLOAD_FOLDER = "/home/user/app/cache/uploads"
-OUTPUT_VIDEO = "/home/user/app/cache/simulation.mp4"
+OUTPUT_VIDEO_MP4 = "/home/user/app/cache/simulation.mp4"
+OUTPUT_DIR = "/home/user/app/outputs"
 
 # Ensure upload folder exists
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+os.makedirs(OUTPUT_DIR, exist_ok=True)
 
-# ✅ Set Hugging Face cache directory to a writable location
+# Set Hugging Face cache directory to a writable location
 CACHE_DIR = "/home/user/app/cache"
 os.environ["TRANSFORMERS_CACHE"] = CACHE_DIR
 os.environ["HF_HOME"] = CACHE_DIR
@@ -33,7 +37,9 @@ MODEL_PATH_SELF = os.path.join(MODEL_FOLDER, "garbage_detector.pt")
 MODEL_PATH_YOLO5 = os.path.join(MODEL_FOLDER, "yolov5-detect-trash-classification.pt")
 MODEL_PATH_DETR = os.path.join(MODEL_FOLDER, "detr")
 
-# ✅ Load models safely from the pre-downloaded directory
+video_ready = False  # Global flag to track video processing status
+
+# Load models safely from the pre-downloaded directory
 print("🔄 Loading models...")
 try:
     # Self-trained YOLO model
@@ -58,6 +64,11 @@ print("✅ Model loading complete. Running application.")
 import setup
 setup.print_model()
 setup.print_cache()
+
+# Ensure simulation.mp4 exists as a placeholder
+if not os.path.exists(OUTPUT_VIDEO_MP4):
+    cap = cv2.VideoWriter(OUTPUT_VIDEO_MP4, cv2.VideoWriter_fourcc(*"mp4v"), 10.0, (640, 640))
+    cap.release()
 
 # HTML Content for UI
 HTML_CONTENT = """
@@ -84,6 +95,7 @@ HTML_CONTENT = """
         #upload-container {
             background: rgba(255, 255, 255, 0.2);
             padding: 20px;
+            width: 70%;
             border-radius: 10px;
             display: inline-block;
             box-shadow: 0px 0px 10px rgba(255, 255, 255, 0.3);
@@ -97,13 +109,33 @@ HTML_CONTENT = """
             cursor: pointer;
         }
         #loader {
-            display: none;
-            color: rgb(255, 94, 94);
-            font-size: 18px;
-            margin-top: 20px;
+            margin-top: 10px;
+            margin-left: auto;
+            margin-right: auto;
+            width: 60px;
+            height: 60px;
+            font-size: 12px;
+            text-align: center;
+        }
+        p {
+            margin-top: 10px; /* Ensure spacing between spinner and text */
+            font-size: 12px;
+            color: #3498db;
+        }
+        #spinner {
+            border: 8px solid #f3f3f3;
+            border-top: 8px solid rgb(117 7 7);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            width: 40px;
+            height: 40px;
+            margin: auto;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
         }
         #outputVideo {
-            display: none;
             margin-top: 20px;
             width: 70%;
             margin-left: auto;
@@ -112,27 +144,114 @@ HTML_CONTENT = """
             border-radius: 10px;
             box-shadow: 0px 0px 10px rgba(255, 255, 255, 0.3);
         }
+        #downloadBtn {
+            display: none;
+            margin-top: 20px;
+            padding: 10px 15px;
+            font-size: 16px;
+            background: #27ae60;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            text-decoration: none;
+        }
+        #downloadBtn:hover {
+            background: #219150;
+        }
+        .hidden {
+            display: none;
+        }
+        @media (max-width: 860px) {
+            h1 {
+                font-size: 30px; 
+            }
+        }
+        @media (max-width: 720px) {
+            h1 {
+                font-size: 25px; 
+            }
+            #upload {
+                font-size: 15px;
+            }
+        }
+        @media (max-width: 580px) {
+            h1 {
+                font-size: 20px; 
+            }
+            #upload {
+                font-size: 10px;
+            }
+        }
+        @media (max-width: 580px) {
+            h1 {
+                font-size: 15px; 
+            }
+        }
+        @media (max-width: 460px) {
+            #upload {
+                font-size: 7px;
+            }
+        }
+        @media (max-width: 390px) {
+            h1 {
+                font-size: 12px; 
+            }
+        }
+        @media (max-width: 360px) {
+            h1 {
+                font-size: 10px; 
+            }
+            #upload {
+                font-size: 5px;
+            }
+        }
     </style>
 </head>
 <body>
     <h1>Upload an Image for Garbage Detection</h1>
     <div id="upload-container">
         <input type="file" id="upload" accept="image/*">
-        <p id="loader">Garbage detection model processing...</p>
     </div>
-    <video id="outputVideo" controls></video>
+    <div id="loader" class="loader hidden">
+        <div id="spinner"></>
+        <!-- <p>Garbage detection model processing...</p> -->
+    </div>
+    <video id="outputVideo" class="outputVideo hidden" controls></video>
+    <a id="downloadBtn" class="hidden" href="/download_video" download="simulation.mp4">Download Video</a>
     <script>
         document.getElementById('upload').addEventListener('change', async function(event) {
+            event.preventDefault();
+            const loader = document.getElementById("loader");
+            const outputVideo = document.getElementById("outputVideo");
+            const downloadBtn = document.getElementById("downloadBtn");
             let file = event.target.files[0];
             if (file) {
                 let formData = new FormData();
                 formData.append("file", file);
-                document.getElementById('loader').style.display = 'block';
+                loader.classList.remove("hidden");
+                outputVideo.classList.add("hidden");
+                downloadBtn.classList.add("hidden");
                 let response = await fetch('/upload/', { method: 'POST', body: formData });
-                document.getElementById('loader').style.display = 'none';
-                document.getElementById('outputVideo').style.display = 'block';
-                document.getElementById('outputVideo').src = '/video';
+                let result = await response.json();
+                while (true) {
+                    let checkResponse = await fetch('/check_video');
+                    let checkResult = await checkResponse.json();
+                    if (checkResult.ready) break;
+                    await new Promise(resolve => setTimeout(resolve, 3000)); // Wait 3s before checking again
+                }
+                loader.classList.add("hidden");
+                setTimeout(() => {
+                    outputVideo.src = "/video?t=" + new Date().getTime();
+                    outputVideo.load();
+                    outputVideo.play();
+                    outputVideo.classList.remove("hidden");
+                    downloadBtn.classList.remove("hidden");
+                }, 2000);
             }
+        });
+        document.getElementById('outputVideo').addEventListener('click', function() {
+            this.play();  // Ensures user-initiated playback
         });
     </script>
 </body>
@@ -151,18 +270,34 @@ async def upload_file(file: UploadFile = File(...)):
     threading.Thread(target=process_image, args=(file_path,)).start()
     return {"message": "File uploaded successfully!"}
 
+# Verify video response
 @app.get("/video")
 async def get_video():
-    return FileResponse(OUTPUT_VIDEO, media_type="video/mp4")
+    if not os.path.exists(OUTPUT_VIDEO_MP4):
+        return Response(content="Video file not found!", status_code=404)
+    def iterfile():
+        with open(OUTPUT_VIDEO_MP4, mode="rb") as file:
+            yield from file
+    return StreamingResponse(iterfile(), media_type="video/mp4", headers={
+        "Content-Disposition": "inline",
+        "Cache-Control": "no-cache, no-store, must-revalidate",
+        "Pragma": "no-cache",
+        "Expires": "0"
+    })
 
+@app.get("/check_video")
+async def check_video():
+    global video_ready
+    return {"ready": video_ready and os.path.exists(OUTPUT_VIDEO_MP4) and os.path.getsize(OUTPUT_VIDEO_MP4) > 1024}  # Ensure file is not empty
+        
 # Garbage detection function
 def process_image(image_path):
+    global video_ready  # Use the global flag
+    video_ready = False  # Mark video as not ready before processing
     image = cv2.imread(image_path)
     if image is None:
         return
     image = cv2.resize(image, (640, 640))
-    
-    # Run detection on all models
     detections = []
     
     # Self-trained YOLOv11m
@@ -188,18 +323,33 @@ def process_image(image_path):
     results_detr = processor_detr.post_process_object_detection(outputs, target_sizes=target_sizes, threshold=0.5)[0]
     for box in results_detr["boxes"]:
         detections.append(box.tolist())
-    print(f"✅ DETR detected {len(detections)} objects.")
+
+    print(f"✅ Multi-modal detected {len(detections)} objects.")
     
-    # Draw bounding boxes and create video
-    video_writer = cv2.VideoWriter(OUTPUT_VIDEO, cv2.VideoWriter_fourcc(*"mp4v"), 10.0, (640, 640))  # 10 FPS lower resource
-    for _ in range(100):  # 5-second simulation (20fps * 5s)
+    # Save video file
+    fourcc = cv2.VideoWriter_fourcc(*"mp4v")
+    video_writer = cv2.VideoWriter(OUTPUT_VIDEO_MP4, fourcc, 10.0, (640, 640)) 
+    
+    for _ in range(100):  # 10 second simulation by 10 FPS (20fps * 10s)
         frame = image.copy()
         for box in detections:
             x1, y1, x2, y2 = map(int, box)
             cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 0, 255), 2)
             cv2.putText(frame, "Detected", (x1, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255), 2)
         video_writer.write(frame)
+
+    print("🎥 Video generated successfully!")
+    # Run detection and generate video...
     video_writer.release()
+    time.sleep(2)  # Short delay to ensure OS flushes the file to disk
+    os.sync()      # Force flush
+    if os.path.exists(OUTPUT_VIDEO_MP4) and os.path.getsize(OUTPUT_VIDEO_MP4) > 1024:  # Ensure file isn't empty
+        print(f"✅ Video saved at {OUTPUT_VIDEO_MP4}")
+        final_video_path = os.path.join(OUTPUT_DIR, "simulation.mp4")
+        shutil.copy(OUTPUT_VIDEO_MP4, final_video_path)
+        video_ready = True  # Only mark as ready **AFTER** full write
+    else:
+        print("❌ ERROR: Video file not found after processing!")
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=7860)

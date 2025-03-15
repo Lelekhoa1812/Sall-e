@@ -22,20 +22,23 @@ RUN useradd -m -u 1000 user
 USER root
 ENV HOME=/home/user
 
+# Install FFmpeg before running the app
+RUN apt-get update && apt-get install -y ffmpeg
+
 # ✅ Install Python dependencies (including `python-multipart`)
 COPY requirements.txt ./
 RUN pip install --no-cache-dir -r requirements.txt
 
 # ✅ Install Hugging Face CLI and required ML dependencies
 RUN pip install --no-cache-dir \
-    huggingface_hub==0.14.1 transformers yolov5 ultralytics torch torchvision torchaudio python-multipart \
+    huggingface_hub==0.14.1 \
     --extra-index-url https://download.pytorch.org/whl/cpu
 
 # ✅ Ensure Hugging Face CLI is accessible
 ENV PATH="/home/user/.local/bin:$PATH"
 
 # ✅ Create model/cache folder and ensure write permissions
-RUN mkdir -p /home/user/app/model /home/user/app/cache && \
+RUN mkdir -p /home/user/app/model /home/user/app/cache /home/user/app/cache/uploads && \
     chown -R user:user /home/user/app && \
     chmod -R 777 /home/user/app
 

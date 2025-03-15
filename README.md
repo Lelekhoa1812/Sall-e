@@ -2,7 +2,7 @@
 
 <img src="src/logo.jpg" alt="Logo" style="width: 80%; max-width: 1000px;">
 
-## **Background and Mission** 🤖♻️
+## **Background and Mission** 🤖🌊♻️
 
 The world's oceans are facing a critical threat from plastic pollution, with an estimated **[150 million tonnes of plastic waste present as of 2016](https://en.wikipedia.org/wiki/Great_Pacific_Garbage_Patch)**, projected to increase to **[ 250 million tonnes by 2025](https://en.wikipedia.org/wiki/Marine_plastic_pollution)**. This pollution poses severe risks to marine life, ecosystems, and human health.
 
@@ -220,6 +220,11 @@ Run multi-modal detection:
   python3 multimodal.py
 ```
 
+Run simulation - generate video:  
+```bash
+  python3 simulation.py
+```
+
 ---
 
 ## **Project Structure** 📁
@@ -273,7 +278,7 @@ The dataset encompasses a diverse range of garbage types, providing a robust fou
 
 ---
 
-## **Conclusion** 🏁🚀
+## **Conclusion** 🚀
 
 The Sall-e project represents a concerted effort to harness advanced technologies in addressing the pressing issue of oceanic plastic pollution. By integrating computer vision and robotics, we aim to enhance the efficiency and effectiveness of marine debris detection and collection, contributing to the preservation of ocean health and biodiversity.
 
