@@ -47,10 +47,6 @@ WORKDIR $HOME/app
 # Copy source code **after** fixing permissions
 COPY --chown=user . $HOME/app
 
-# Copy and execute the model download script
-# COPY download_models.py /home/user/app/download_models.py
-# RUN python /home/user/app/download_models.py
-
 # Manually download DETR model using `snapshot_download()`
 RUN python -c "from huggingface_hub import snapshot_download; snapshot_download(repo_id='facebook/detr-resnet-50', local_dir='/home/user/app/model/detr', local_dir_use_symlinks=False)"
 

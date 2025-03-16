@@ -87,7 +87,7 @@ HTML_CONTENT = """
 <html>
 <head>
     <title>Sall-e Garbage Detection</title>
-    <link rel="website icon" type="png" href="/uploads/icon.png" >
+    <link rel="website icon" type="png" href="/icon.png" >
     <style>
         body {
             font-family: 'Roboto', sans-serif; background: linear-gradient(270deg, rgb(44, 13, 58), rgb(13, 58, 56)); color: white; text-align: center; margin: 0; padding: 50px;
@@ -122,7 +122,7 @@ HTML_CONTENT = """
             margin-top: 20px; width: 70%; margin-left: auto; margin-right: auto; max-width: 640px; border-radius: 10px; box-shadow: 0px 0px 10px rgba(255, 255, 255, 0.3);
         }
         #downloadBtn {
-            display: block; width: 20%; margin-top: 20px; margin-left: auto; margin-right: auto; padding: 10px 15px; font-size: 16px; background: #27ae60; color: white; border: none; border-radius: 5px; cursor: pointer; text-decoration: none;
+            display: block; visibility: hidden; width: 20%; margin-top: 20px; margin-left: auto; margin-right: auto; padding: 10px 15px; font-size: 16px; background: #27ae60; color: white; border: none; border-radius: 5px; cursor: pointer; text-decoration: none;
         }
         #downloadBtn:hover {
             background: #950606;
@@ -178,7 +178,7 @@ HTML_CONTENT = """
     <script>
         document.addEventListener("DOMContentLoaded", function() {
             document.getElementById("outputVideo").classList.add("hidden");
-            document.getElementById("downloadBtn").classList.add("hidden");
+            document.getElementById("downloadBtn").style.visibility = "hidden";
         });
         document.getElementById('upload').addEventListener('change', async function(event) {
             event.preventDefault();
@@ -191,7 +191,7 @@ HTML_CONTENT = """
                 formData.append("file", file);
                 loader.classList.remove("hidden");
                 outputVideo.classList.add("hidden");
-                downloadBtn.classList.add("hidden");
+                document.getElementById("downloadBtn").style.visibility = "hidden";
                 let response = await fetch('/upload/', { method: 'POST', body: formData });
                 let result = await response.json();
                 let user_id = result.user_id;  
@@ -209,13 +209,13 @@ HTML_CONTENT = """
                 outputVideo.setAttribute("crossOrigin", "anonymous");
                 outputVideo.classList.remove("hidden");
                 downloadBtn.href = videoUrl;
-                downloadBtn.classList.remove("hidden");
+                document.getElementById("downloadBtn").style.visibility = "visible";
             }
         });
         document.getElementById('outputVideo').addEventListener('error', function() {
             console.log("⚠️ Video could not be played, showing download button instead.");
             document.getElementById('outputVideo').classList.add("hidden");
-            document.getElementById('downloadBtn').classList.remove("hidden");
+            document.getElementById("downloadBtn").style.visibility = "visible";
         });
     </script>
 </body>
