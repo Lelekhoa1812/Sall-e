@@ -5,6 +5,7 @@
 # Server startup
 from fastapi import FastAPI, File, UploadFile, Request
 from fastapi.responses import HTMLResponse, FileResponse, Response, StreamingResponse
+from fastapi.staticfiles import StaticFiles
 import os
 import shutil
 import uvicorn
@@ -31,6 +32,8 @@ video_ready = {}  # Dictionary to track video status for each user
 # Define paths
 UPLOAD_FOLDER = "/home/user/app/cache/uploads"
 OUTPUT_DIR = "/home/user/app/outputs"
+SPRITE_PATH = "/home/user/app/sprite.png"
+ICON_PATH = "/home/user/app/icon.png"
 OUTPUT_VIDEO_MP4 = os.path.join(OUTPUT_DIR, "simulation.mp4")  
 # Ensure upload folder exists
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
@@ -81,13 +84,49 @@ if not os.path.exists(OUTPUT_VIDEO_MP4):
     cap.release()
 
 
+# Robot class for navigation and collection
+class Robot:
+    def __init__(self, image_path, speed=20):
+        self.image = Image.open(image_path).convert("RGBA").resize((40, 40))
+        self.image_np = np.array(self.image)
+        self.position = [0, 0]
+        self.angle = 0  # Initially pointing right (90 deg)
+        self.speed = speed
+
+    def find_nearest_garbage(self, objects):
+        '''Find the closest garbage object (dist can be in diagonal move)'''
+        nearest = None
+        min_dist = float("inf")
+        for obj in objects:
+            if obj["collected"]:
+                continue
+            dist = np.linalg.norm(np.array(self.position) - np.array(obj["position"]))
+            if dist < min_dist:
+                min_dist = dist
+                nearest = obj
+        return nearest
+
+    def move_towards(self, target):
+        '''Move robot towards the closest garbage object, can move in diagonal direction'''
+        if target:
+            dx, dy = np.array(target["position"]) - np.array(self.position)
+            distance = np.linalg.norm([dx, dy])
+            if distance > self.speed:
+                dx, dy = (dx / distance) * self.speed, (dy / distance) * self.speed
+            self.position[0] += int(dx)
+            self.position[1] += int(dy)
+            self.angle = np.degrees(np.arctan2(dy, dx))
+            if distance <= self.speed:
+                target["collected"] = True
+
+
 # HTML Content for UI
 HTML_CONTENT = """
 <!DOCTYPE html>
 <html>
 <head>
     <title>Sall-e Garbage Detection</title>
-    <link rel="website icon" type="png" href="/icon.png" >
+    <link rel="website icon" type="png" href="/static/icon.png" >
     <style>
         body {
             font-family: 'Roboto', sans-serif; background: linear-gradient(270deg, rgb(44, 13, 58), rgb(13, 58, 56)); color: white; text-align: center; margin: 0; padding: 50px;
@@ -223,6 +262,8 @@ HTML_CONTENT = """
 """
 
 
+# Frontend static FastAPI
+app.mount("/static", StaticFiles(directory="/home/user/app"), name="static")
 @app.get("/ui")
 async def main():
     return HTMLResponse(content=HTML_CONTENT)
@@ -372,18 +413,35 @@ def process_image(image_path, user_id):
 
     print(f"✅ Multi-modal detected {len(detections)} objects for {user_id} session.")
     
+    # Initialize robot class
+    robot = Robot(SPRITE_PATH)
+    objects = [{"position": [int(x1), int(y1)], "collected": False} for x1, y1, x2, y2 in detections]
+
     # Save video file
     fourcc = cv2.VideoWriter_fourcc(*"mp4v")
     video_writer = cv2.VideoWriter(video_path, fourcc, 10.0, (640, 640)) 
-    
-    # Video writer
-    for _ in range(100):  # 10 second simulation by 10 FPS (10fps * 10s)
+
+    # Video writer (10 FPS, continuously write video until all garbage object are flagged `collected`)
+    while True:
         frame = image.copy()
-        for box in detections:
-            x1, y1, x2, y2 = map(int, box)
-            cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 0, 255), 2)
-            cv2.putText(frame, "Detected", (x1, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255), 2)
+        target = robot.find_nearest_garbage(objects)
+        robot.move_towards(target)
+        # Iterate each garbage object
+        for obj in objects:
+            x, y = obj["position"]
+            color = (0, 0, 255) if not obj["collected"] else (0, 255, 0)
+            label = "Detected" if not obj["collected"] else "Collected"
+            cv2.rectangle(frame, (x, y), (x + 20, y + 20), color, 2)
+            cv2.putText(frame, label, (x, y - 5), cv2.FONT_HERSHEY_SIMPLEX, 0.5, color, 2)
+        # Initialise the robot position and change their position upon new coordination
+        rx, ry = robot.position
+        for c in range(3):
+            frame[ry:ry+40, rx:rx+40, c] = robot.image_np[:, :, c]
+        # Write frame until all are in `collected` state
         video_writer.write(frame)
+        if all(obj["collected"] for obj in objects):
+            break
+
 
     print(f"🎥 Video generated successfully for user {user_id}!")
     video_writer.release()

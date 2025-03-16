@@ -63,6 +63,10 @@ RUN python setup.py
 # Remove previous video file each Docker restart to reduce storage
 RUN rm -rf /home/user/app/outputs/*.mp4
 
+# Copy image sources
+COPY sprite.png /home/user/app/sprite.png
+COPY icon.png /home/user/app/icon.png
+
 # Expose FastAPI port
 EXPOSE 7860
 

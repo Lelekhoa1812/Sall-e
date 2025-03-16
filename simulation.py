@@ -81,7 +81,7 @@ class Robot:
                 target["collected"] = True
 
 # Initialize robot
-robot = Robot("src/sprite.png")
+robot = Robot("Sall-eGarbageDetection/sprite.png")
 
 # Video writer (to .mp4)
 fourcc = cv2.VideoWriter_fourcc(*"mp4v")
