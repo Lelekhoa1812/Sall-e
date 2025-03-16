@@ -12,6 +12,7 @@ The "Sall-e" project aims to address this issue by developing an integrated syst
 
 <img src="src/polluted.jpg" alt="Polluted Ocean" style="width: 80%; max-width: 1000px;">  
 
+[ACCESSING UI DEMO 🤗](https://huggingface.co/spaces/BinKhoaLe1812/Sall-eGarbageDetection)
 ---
 
 ## **Synthetic Testing Image Generation** 📸

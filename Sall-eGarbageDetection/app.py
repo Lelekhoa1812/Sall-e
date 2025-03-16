@@ -1,35 +1,44 @@
-from fastapi import FastAPI, File, UploadFile
+# Common endpoint https://binkhoale1812-sall-egarbagedetection.hf.space/...
+
+# Server startup
+from fastapi import FastAPI, File, UploadFile, Request
 from fastapi.responses import HTMLResponse, FileResponse, Response, StreamingResponse
 import os
 import shutil
+import uvicorn
+import threading
+import requests
+import uuid
+import time
+# Video generation
 import cv2
 import numpy as np
 from PIL import Image
-import uvicorn
-import threading
 import torch
 import yolov5
 import ffmpeg
 from ultralytics import YOLO
 from transformers import DetrImageProcessor, DetrForObjectDetection
-import time
+
 
 # Initialize FastAPI app
 app = FastAPI()
 
+
 # Define paths
 UPLOAD_FOLDER = "/home/user/app/cache/uploads"
-OUTPUT_VIDEO_MP4 = "/home/user/app/cache/simulation.mp4"
 OUTPUT_DIR = "/home/user/app/outputs"
-
+OUTPUT_VIDEO_MP4 = os.path.join(OUTPUT_DIR, "simulation.mp4")  
 # Ensure upload folder exists
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 os.makedirs(OUTPUT_DIR, exist_ok=True)
+
 
 # Set Hugging Face cache directory to a writable location
 CACHE_DIR = "/home/user/app/cache"
 os.environ["TRANSFORMERS_CACHE"] = CACHE_DIR
 os.environ["HF_HOME"] = CACHE_DIR
+
 
 # Define model paths
 MODEL_FOLDER = "/home/user/app/model"
@@ -37,7 +46,6 @@ MODEL_PATH_SELF = os.path.join(MODEL_FOLDER, "garbage_detector.pt")
 MODEL_PATH_YOLO5 = os.path.join(MODEL_FOLDER, "yolov5-detect-trash-classification.pt")
 MODEL_PATH_DETR = os.path.join(MODEL_FOLDER, "detr")
 
-video_ready = False  # Global flag to track video processing status
 
 # Load models safely from the pre-downloaded directory
 print("🔄 Loading models...")
@@ -64,11 +72,11 @@ print("✅ Model loading complete. Running application.")
 import setup
 setup.print_model()
 setup.print_cache()
-
 # Ensure simulation.mp4 exists as a placeholder
 if not os.path.exists(OUTPUT_VIDEO_MP4):
     cap = cv2.VideoWriter(OUTPUT_VIDEO_MP4, cv2.VideoWriter_fourcc(*"mp4v"), 10.0, (640, 640))
     cap.release()
+
 
 # HTML Content for UI
 HTML_CONTENT = """
@@ -217,8 +225,8 @@ HTML_CONTENT = """
         <div id="spinner"></>
         <!-- <p>Garbage detection model processing...</p> -->
     </div>
-    <video id="outputVideo" class="outputVideo hidden" controls></video>
-    <a id="downloadBtn" class="hidden" href="/download_video" download="simulation.mp4">Download Video</a>
+    <video id="outputVideo" class="outputVideo" controls></video>
+    <a id="downloadBtn" href="/video" download="simulation.mp4">Download Video</a>
     <script>
         document.getElementById('upload').addEventListener('change', async function(event) {
             event.preventDefault();
@@ -234,66 +242,143 @@ HTML_CONTENT = """
                 downloadBtn.classList.add("hidden");
                 let response = await fetch('/upload/', { method: 'POST', body: formData });
                 let result = await response.json();
+                let user_id = result.user_id;  
                 while (true) {
-                    let checkResponse = await fetch('/check_video');
+                    let checkResponse = await fetch('/check_vide/${user_id}');
                     let checkResult = await checkResponse.json();
                     if (checkResult.ready) break;
                     await new Promise(resolve => setTimeout(resolve, 3000)); // Wait 3s before checking again
                 }
                 loader.classList.add("hidden");
-                setTimeout(() => {
-                    outputVideo.src = "/video?t=" + new Date().getTime();
-                    outputVideo.load();
-                    outputVideo.play();
-                    outputVideo.classList.remove("hidden");
-                    downloadBtn.classList.remove("hidden");
-                }, 2000);
+            let videoUrl = "/video/${user_id}?t=" + new Date().getTime();
+            outputVideo.src = videoUrl;
+            outputVideo.load();
+            outputVideo.play();
+            outputVideo.classList.remove("hidden");
+            downloadBtn.href = videoUrl;
+            downloadBtn.classList.remove("hidden");
             }
         });
-        document.getElementById('outputVideo').addEventListener('click', function() {
-            this.play();  // Ensures user-initiated playback
+        document.getElementById('outputVideo').addEventListener('error', function() {
+            console.log("⚠️ Video could not be played, showing download button instead.");
+            document.getElementById('outputVideo').classList.add("hidden");
+            document.getElementById('downloadBtn').classList.remove("hidden");
         });
     </script>
 </body>
 </html>
 """
 
+
 @app.get("/")
 async def main():
     return HTMLResponse(content=HTML_CONTENT)
 
+
+def generate_unique_filename():
+    """Generate a unique filename for each user session."""
+    return str(uuid.uuid4())[:8]  # Shorter random ID
+
+
+# Endpoint uploading an image
 @app.post("/upload/")
-async def upload_file(file: UploadFile = File(...)):
+async def upload_file(request: Request, file: UploadFile = File(...)):
+    user_id = generate_unique_filename()
     file_path = os.path.join(UPLOAD_FOLDER, file.filename)
     with open(file_path, "wb") as buffer:
         shutil.copyfileobj(file.file, buffer)
-    threading.Thread(target=process_image, args=(file_path,)).start()
-    return {"message": "File uploaded successfully!"}
+    thread = threading.Thread(target=process_image, args=(file_path, user_id))
+    thread.start()
+    return {"message": "File uploaded successfully!", "user_id": user_id}
 
-# Verify video response
-@app.get("/video")
-async def get_video():
-    if not os.path.exists(OUTPUT_VIDEO_MP4):
+
+# Endpoint generating and accessing the video
+@app.get("/video/{user_id}")
+async def get_video(user_id: str):
+    video_path = os.path.join(OUTPUT_DIR, f"{user_id}_simulation_h264.mp4")
+    if not os.path.exists(video_path) or os.path.getsize(video_path) < 100_000:
         return Response(content="Video file not found!", status_code=404)
     def iterfile():
-        with open(OUTPUT_VIDEO_MP4, mode="rb") as file:
+        with open(video_path, mode="rb") as file:
             yield from file
     return StreamingResponse(iterfile(), media_type="video/mp4", headers={
-        "Content-Disposition": "inline",
+        "Content-Disposition": "inline; filename={user_id}_simulation.mp4",
         "Cache-Control": "no-cache, no-store, must-revalidate",
         "Pragma": "no-cache",
         "Expires": "0"
     })
 
+
+# Ensure video ready state, hide loader and show video + download btn
 @app.get("/check_video")
-async def check_video():
-    global video_ready
-    return {"ready": video_ready and os.path.exists(OUTPUT_VIDEO_MP4) and os.path.getsize(OUTPUT_VIDEO_MP4) > 1024}  # Ensure file is not empty
-        
-# Garbage detection function
-def process_image(image_path):
-    global video_ready  # Use the global flag
-    video_ready = False  # Mark video as not ready before processing
+async def check_video(user_id: str):
+    video_path = os.path.join(OUTPUT_DIR, f"{user_id}_simulation_h264.mp4")
+    # Make sure the file is large enough to be a valid video (e.g., > 100 KB)
+    min_valid_size = 100_000  
+    return {"ready": os.path.exists(video_path) and os.path.getsize(video_path) > min_valid_size}
+
+
+# Debug endpoints
+@app.get("/debug/list_files")
+async def list_files():
+    cache_files = os.listdir("/home/user/app/cache/")
+    output_files = os.listdir("/home/user/app/outputs/")
+    return {
+        "cache_files": cache_files,
+        "output_files": output_files
+    }
+@app.get("/debug/video_info/{user_id}")
+async def debug_video_info(user_id: str):
+    video_path = os.path.join(OUTPUT_DIR, f"{user_id}_simulation_h264.mp4")
+    if not os.path.exists(video_path):
+        return {"error": "Video file not found!"}
+    file_size = os.path.getsize(video_path)
+    return {
+        "file_path": video_path,
+        "file_size": file_size,
+        "playable": file_size > 100_000
+    }
+
+
+def convert_video_to_h264(input_video, output_video):
+    """Convert video to H.264 for better compatibility."""
+    try:
+        ffmpeg.input(input_video).output(output_video, vcodec="libx264", format="mp4").run(overwrite_output=True)
+        print(f"✅ Video converted to H.264: {output_video}")
+        return output_video
+    except Exception as e:
+        print(f"❌ Error converting video: {e}")
+        return input_video  # Fallback to original file
+
+
+def set_file_permissions(file_path):
+    '''Ensure user has read access to view file (some browser may block this)'''
+    try:
+        os.chmod(file_path, 0o644)  # Allow read access
+        print(f"✅ File permissions set: {file_path}")
+    except Exception as e:
+        print(f"❌ Error setting permissions: {e}")
+
+
+def is_video_accessible(user_id: str):
+    """Checks if the video is accessible from the /video/{user_id} endpoint."""
+    try:
+        video_url = f"https://binkhoale1812-sall-egarbagedetection.hf.space/video/{user_id}"
+        response = requests.get(video_url, timeout=10)
+        return response.status_code == 200
+    except Exception:
+        return False
+    
+
+# Garbage detection and video generation
+def process_image(image_path, user_id):
+    # Assign unique id
+    unique_filename = f"{user_id}_simulation.mp4"
+    unique_h264_filename = f"{user_id}_simulation_h264.mp4"
+    video_path = os.path.join(OUTPUT_DIR, unique_filename)
+    h264_path = os.path.join(OUTPUT_DIR, unique_h264_filename)
+    
+    # Process the image
     image = cv2.imread(image_path)
     if image is None:
         return
@@ -324,13 +409,14 @@ def process_image(image_path):
     for box in results_detr["boxes"]:
         detections.append(box.tolist())
 
-    print(f"✅ Multi-modal detected {len(detections)} objects.")
+    print(f"✅ Multi-modal detected {len(detections)} objects for {user_id} session.")
     
     # Save video file
     fourcc = cv2.VideoWriter_fourcc(*"mp4v")
-    video_writer = cv2.VideoWriter(OUTPUT_VIDEO_MP4, fourcc, 10.0, (640, 640)) 
+    video_writer = cv2.VideoWriter(video_path, fourcc, 10.0, (640, 640)) 
     
-    for _ in range(100):  # 10 second simulation by 10 FPS (20fps * 10s)
+    # Video writer
+    for _ in range(100):  # 10 second simulation by 10 FPS (10fps * 10s)
         frame = image.copy()
         for box in detections:
             x1, y1, x2, y2 = map(int, box)
@@ -339,17 +425,17 @@ def process_image(image_path):
         video_writer.write(frame)
 
     print("🎥 Video generated successfully!")
-    # Run detection and generate video...
     video_writer.release()
+    converted_video = convert_video_to_h264(video_path, h264_path) # Convert to H.264 for better streaming compatibility
+    set_file_permissions(converted_video)
     time.sleep(2)  # Short delay to ensure OS flushes the file to disk
     os.sync()      # Force flush
-    if os.path.exists(OUTPUT_VIDEO_MP4) and os.path.getsize(OUTPUT_VIDEO_MP4) > 1024:  # Ensure file isn't empty
-        print(f"✅ Video saved at {OUTPUT_VIDEO_MP4}")
-        final_video_path = os.path.join(OUTPUT_DIR, "simulation.mp4")
-        shutil.copy(OUTPUT_VIDEO_MP4, final_video_path)
-        video_ready = True  # Only mark as ready **AFTER** full write
+    if os.path.exists(converted_video) and os.path.getsize(converted_video) > 100_000 and is_video_accessible(user_id):
+        print(f"✅ Video successfully verified and saved at {converted_video}")
+        return h264_path
     else:
         print("❌ ERROR: Video file not found after processing!")
+        return None
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=7860)
