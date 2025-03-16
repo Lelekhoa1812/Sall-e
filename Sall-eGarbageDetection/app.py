@@ -1,4 +1,6 @@
-# Common endpoint https://binkhoale1812-sall-egarbagedetection.hf.space/...
+# Common endpoint: https://binkhoale1812-sall-egarbagedetection.hf.space/...
+# UI Endpoint: https://binkhoale1812-sall-egarbagedetection.hf.space/ui
+# Analyze API: https://binkhoale1812-sall-egarbagedetection.hf.space/analyze
 
 # Server startup
 from fastapi import FastAPI, File, UploadFile, Request
@@ -23,6 +25,7 @@ from transformers import DetrImageProcessor, DetrForObjectDetection
 
 # Initialize FastAPI app
 app = FastAPI()
+video_ready = {}  # Dictionary to track video status for each user
 
 
 # Define paths
@@ -83,15 +86,11 @@ HTML_CONTENT = """
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Garbage Detection</title>
+    <title>Sall-e Garbage Detection</title>
+    <link rel="website icon" type="png" href="/uploads/icon.png" >
     <style>
         body {
-            font-family: 'Roboto', sans-serif;
-            background: linear-gradient(270deg, rgb(44, 13, 58), rgb(13, 58, 56));
-            color: white;
-            text-align: center;
-            margin: 0;
-            padding: 50px;
+            font-family: 'Roboto', sans-serif; background: linear-gradient(270deg, rgb(44, 13, 58), rgb(13, 58, 56)); color: white; text-align: center; margin: 0; padding: 50px;
         }
         h1 {
             font-size: 40px;
@@ -101,118 +100,67 @@ HTML_CONTENT = """
             font-weight: bold;
         }
         #upload-container {
-            background: rgba(255, 255, 255, 0.2);
-            padding: 20px;
-            width: 70%;
-            border-radius: 10px;
-            display: inline-block;
-            box-shadow: 0px 0px 10px rgba(255, 255, 255, 0.3);
+            background: rgba(255, 255, 255, 0.2); padding: 20px; width: 70%; border-radius: 10px; display: inline-block; box-shadow: 0px 0px 10px rgba(255, 255, 255, 0.3);
         }
         #upload {
-            font-size: 18px;
-            padding: 10px;
-            border-radius: 5px;
-            border: none;
-            background: #fff;
-            cursor: pointer;
+            font-size: 18px; padding: 10px; border-radius: 5px; border: none; background: #fff; cursor: pointer;
         }
         #loader {
-            margin-top: 10px;
-            margin-left: auto;
-            margin-right: auto;
-            width: 60px;
-            height: 60px;
-            font-size: 12px;
-            text-align: center;
+            margin-top: 10px; margin-left: auto; margin-right: auto; width: 60px; height: 60px; font-size: 12px; text-align: center;
         }
         p {
-            margin-top: 10px; /* Ensure spacing between spinner and text */
-            font-size: 12px;
-            color: #3498db;
+            margin-top: 10px; font-size: 12px; color: #3498db;
         }
         #spinner {
-            border: 8px solid #f3f3f3;
-            border-top: 8px solid rgb(117 7 7);
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-            width: 40px;
-            height: 40px;
-            margin: auto;
+            border: 8px solid #f3f3f3; border-top: 8px solid rgb(117 7 7); border-radius: 50%; animation: spin 1s linear infinite; width: 40px; height: 40px; margin: auto;
         }
         @keyframes spin {
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
         }
         #outputVideo {
-            margin-top: 20px;
-            width: 70%;
-            margin-left: auto;
-            margin-right: auto;
-            max-width: 640px;
-            border-radius: 10px;
-            box-shadow: 0px 0px 10px rgba(255, 255, 255, 0.3);
+            margin-top: 20px; width: 70%; margin-left: auto; margin-right: auto; max-width: 640px; border-radius: 10px; box-shadow: 0px 0px 10px rgba(255, 255, 255, 0.3);
         }
         #downloadBtn {
-            display: none;
-            margin-top: 20px;
-            padding: 10px 15px;
-            font-size: 16px;
-            background: #27ae60;
-            color: white;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            text-decoration: none;
+            display: block; width: 20%; margin-top: 20px; margin-left: auto; margin-right: auto; padding: 10px 15px; font-size: 16px; background: #27ae60; color: white; border: none; border-radius: 5px; cursor: pointer; text-decoration: none;
         }
         #downloadBtn:hover {
-            background: #219150;
+            background: #950606;
         }
         .hidden {
             display: none;
         }
         @media (max-width: 860px) {
-            h1 {
-                font-size: 30px; 
-            }
+            h1 { font-size: 30px; }
         }
         @media (max-width: 720px) {
-            h1 {
-                font-size: 25px; 
-            }
-            #upload {
-                font-size: 15px;
-            }
+            h1 { font-size: 25px; }
+            #upload { font-size: 15px; }
+            #downloadBtn { font-size: 13px; }
         }
         @media (max-width: 580px) {
-            h1 {
-                font-size: 20px; 
-            }
-            #upload {
-                font-size: 10px;
-            }
+            h1 { font-size: 20px; }
+            #upload { font-size: 10px; }
+            #downloadBtn { font-size: 10px; }
         }
         @media (max-width: 580px) {
-            h1 {
-                font-size: 15px; 
-            }
+            h1 { font-size: 10px; }
         }
         @media (max-width: 460px) {
-            #upload {
-                font-size: 7px;
-            }
+            #upload { font-size: 7px; }
         }
-        @media (max-width: 390px) {
-            h1 {
-                font-size: 12px; 
-            }
+        @media (max-width: 400px) {
+            h1 { font-size: 14px; }
         }
-        @media (max-width: 360px) {
-            h1 {
-                font-size: 10px; 
-            }
-            #upload {
-                font-size: 5px;
-            }
+        @media (max-width: 370px) {
+            h1 { font-size: 11px; }
+            #upload { font-size: 5px; }
+            #downloadBtn { font-size: 7px; }
+        }
+        @media (max-width: 330px) {
+            h1 { font-size: 8px; }
+            #upload { font-size: 3px; }
+            #downloadBtn { font-size: 5px; }
         }
     </style>
 </head>
@@ -222,12 +170,16 @@ HTML_CONTENT = """
         <input type="file" id="upload" accept="image/*">
     </div>
     <div id="loader" class="loader hidden">
-        <div id="spinner"></>
+        <div id="spinner"></div>
         <!-- <p>Garbage detection model processing...</p> -->
     </div>
     <video id="outputVideo" class="outputVideo" controls></video>
-    <a id="downloadBtn" href="/video" download="simulation.mp4">Download Video</a>
+    <a id="downloadBtn" class="downloadBtn">Download Video</a>
     <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            document.getElementById("outputVideo").classList.add("hidden");
+            document.getElementById("downloadBtn").classList.add("hidden");
+        });
         document.getElementById('upload').addEventListener('change', async function(event) {
             event.preventDefault();
             const loader = document.getElementById("loader");
@@ -244,19 +196,20 @@ HTML_CONTENT = """
                 let result = await response.json();
                 let user_id = result.user_id;  
                 while (true) {
-                    let checkResponse = await fetch('/check_vide/${user_id}');
+                    let checkResponse = await fetch(`/check_video/${user_id}`);
                     let checkResult = await checkResponse.json();
                     if (checkResult.ready) break;
                     await new Promise(resolve => setTimeout(resolve, 3000)); // Wait 3s before checking again
                 }
                 loader.classList.add("hidden");
-            let videoUrl = "/video/${user_id}?t=" + new Date().getTime();
-            outputVideo.src = videoUrl;
-            outputVideo.load();
-            outputVideo.play();
-            outputVideo.classList.remove("hidden");
-            downloadBtn.href = videoUrl;
-            downloadBtn.classList.remove("hidden");
+                let videoUrl = `/video/${user_id}?t=${new Date().getTime()}`;
+                outputVideo.src = videoUrl;
+                outputVideo.load();
+                outputVideo.play();
+                outputVideo.setAttribute("crossOrigin", "anonymous");
+                outputVideo.classList.remove("hidden");
+                downloadBtn.href = videoUrl;
+                downloadBtn.classList.remove("hidden");
             }
         });
         document.getElementById('outputVideo').addEventListener('error', function() {
@@ -270,7 +223,7 @@ HTML_CONTENT = """
 """
 
 
-@app.get("/")
+@app.get("/ui")
 async def main():
     return HTMLResponse(content=HTML_CONTENT)
 
@@ -284,7 +237,8 @@ def generate_unique_filename():
 @app.post("/upload/")
 async def upload_file(request: Request, file: UploadFile = File(...)):
     user_id = generate_unique_filename()
-    file_path = os.path.join(UPLOAD_FOLDER, file.filename)
+    print(f"Session id {user_id}")
+    file_path = os.path.join(UPLOAD_FOLDER, f"{user_id}_{file.filename}")
     with open(file_path, "wb") as buffer:
         shutil.copyfileobj(file.file, buffer)
     thread = threading.Thread(target=process_image, args=(file_path, user_id))
@@ -310,13 +264,12 @@ async def get_video(user_id: str):
 
 
 # Ensure video ready state, hide loader and show video + download btn
-@app.get("/check_video")
+@app.get("/check_video/{user_id}")
 async def check_video(user_id: str):
+    """Check if the video for a specific user is ready."""
     video_path = os.path.join(OUTPUT_DIR, f"{user_id}_simulation_h264.mp4")
-    # Make sure the file is large enough to be a valid video (e.g., > 100 KB)
-    min_valid_size = 100_000  
-    return {"ready": os.path.exists(video_path) and os.path.getsize(video_path) > min_valid_size}
-
+    min_valid_size = 100_000  # Minimum valid file size 100kB
+    return {"ready": video_ready.get(user_id, False) and os.path.exists(video_path) and os.path.getsize(video_path) > min_valid_size}
 
 # Debug endpoints
 @app.get("/debug/list_files")
@@ -329,9 +282,10 @@ async def list_files():
     }
 @app.get("/debug/video_info/{user_id}")
 async def debug_video_info(user_id: str):
+    """Returns debug info about a user's video file."""
     video_path = os.path.join(OUTPUT_DIR, f"{user_id}_simulation_h264.mp4")
     if not os.path.exists(video_path):
-        return {"error": "Video file not found!"}
+        return {"error": f"Video file for user {user_id} not found!"}
     file_size = os.path.getsize(video_path)
     return {
         "file_path": video_path,
@@ -347,7 +301,7 @@ def convert_video_to_h264(input_video, output_video):
         print(f"✅ Video converted to H.264: {output_video}")
         return output_video
     except Exception as e:
-        print(f"❌ Error converting video: {e}")
+        print(f"❌ Error converting video {output_video}, revert back {input_video}: {e}")
         return input_video  # Fallback to original file
 
 
@@ -357,27 +311,34 @@ def set_file_permissions(file_path):
         os.chmod(file_path, 0o644)  # Allow read access
         print(f"✅ File permissions set: {file_path}")
     except Exception as e:
-        print(f"❌ Error setting permissions: {e}")
+        print(f"❌ Error setting permissions for {file_path}: {e}")
 
 
 def is_video_accessible(user_id: str):
-    """Checks if the video is accessible from the /video/{user_id} endpoint."""
-    try:
-        video_url = f"https://binkhoale1812-sall-egarbagedetection.hf.space/video/{user_id}"
-        response = requests.get(video_url, timeout=10)
-        return response.status_code == 200
-    except Exception:
-        return False
-    
+    """Checks if the video file exists and is valid without external HTTP requests."""
+    video_path = os.path.join(OUTPUT_DIR, f"{user_id}_simulation_h264.mp4")
+    if os.path.exists(video_path):
+        file_size = os.path.getsize(video_path)
+        if file_size > 100_000:  # Ensure file is large enough to be a valid video
+            print(f"✅ Video file for user {user_id} is accessible: {file_size} bytes")
+            return True
+        else:
+            print(f"⚠️ Warning: Video for user {user_id} exists but is too small ({file_size} bytes)")
+    else:
+        print(f"❌ Error: Video file for user {user_id} does not exist.")
+    return False
+
 
 # Garbage detection and video generation
 def process_image(image_path, user_id):
     # Assign unique id
+    global video_ready
+    video_ready[user_id] = False  # Ensure video is marked as "not ready" initially
     unique_filename = f"{user_id}_simulation.mp4"
     unique_h264_filename = f"{user_id}_simulation_h264.mp4"
     video_path = os.path.join(OUTPUT_DIR, unique_filename)
     h264_path = os.path.join(OUTPUT_DIR, unique_h264_filename)
-    
+
     # Process the image
     image = cv2.imread(image_path)
     if image is None:
@@ -386,20 +347,20 @@ def process_image(image_path, user_id):
     detections = []
     
     # Self-trained YOLOv11m
-    print("🔍 Running detection with Self-trained YOLO model...")
+    print(f"🔍 Running detection with Self-trained YOLO model for {user_id} session...")
     results_self = model_self(image)
     for result in results_self:
         for box in result.boxes:
             detections.append(box.xyxy[0].tolist())
     
     # YOLOv5 Model
-    print("🔍 Running detection with YOLOv5 model...")
+    print(f"🔍 Running detection with YOLOv5 model for {user_id} session...")
     results_yolo5 = model_yolo5(image, size=416)
     for result in results_yolo5.pred[0]:
         detections.append(result[:4].tolist())
     
     # DETR Model
-    print("🔍 Running detection with DETR model...")
+    print(f"🔍 Running detection with DETR model for {user_id} session...")
     image_pil = Image.open(image_path).convert("RGB")
     inputs = processor_detr(images=image_pil, return_tensors="pt")
     with torch.no_grad():
@@ -424,18 +385,73 @@ def process_image(image_path, user_id):
             cv2.putText(frame, "Detected", (x1, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255), 2)
         video_writer.write(frame)
 
-    print("🎥 Video generated successfully!")
+    print(f"🎥 Video generated successfully for user {user_id}!")
     video_writer.release()
     converted_video = convert_video_to_h264(video_path, h264_path) # Convert to H.264 for better streaming compatibility
     set_file_permissions(converted_video)
     time.sleep(2)  # Short delay to ensure OS flushes the file to disk
     os.sync()      # Force flush
+    video_ready[user_id] = True
     if os.path.exists(converted_video) and os.path.getsize(converted_video) > 100_000 and is_video_accessible(user_id):
-        print(f"✅ Video successfully verified and saved at {converted_video}")
+        print(f"✅ Video successfully verified and saved at {converted_video} for session {user_id}")
         return h264_path
     else:
-        print("❌ ERROR: Video file not found after processing!")
+        print(f"❌ ERROR: Video file not found after processing for session {user_id}!")
         return None
+
+
+# API endpoint for user to extract bbox coordination from their image
+@app.post("/analyze/")
+async def analyze_file(file: UploadFile = File(...)):
+    user_id = generate_unique_filename()
+    print(f"Analyzing image for session: {user_id}")
+
+    # Save file
+    file_path = os.path.join(UPLOAD_FOLDER, f"{user_id}_{file.filename}")
+    with open(file_path, "wb") as buffer:
+        shutil.copyfileobj(file.file, buffer)
+
+    # Run detection
+    image = cv2.imread(file_path)
+    if image is None:
+        return {"error": "Failed to read image"}
+    image = cv2.resize(image, (640, 640))
+    detections = []
+
+    # Self-trained YOLOv11m Model
+    results_self = model_self(image)
+    for result in results_self:
+        for box in result.boxes:
+            detections.append({
+                "bbox": box.xyxy[0].tolist(),
+                "model": "self-trained"
+            })
+
+    # YOLOv5 Model
+    results_yolo5 = model_yolo5(image, size=416)
+    for result in results_yolo5.pred[0]:
+        detections.append({
+            "bbox": result[:4].tolist(),
+            "model": "yolov5"
+        })
+
+    # DETR Model
+    image_pil = Image.open(file_path).convert("RGB")
+    inputs = processor_detr(images=image_pil, return_tensors="pt")
+    with torch.no_grad():
+        outputs = model_detr(**inputs)
+    target_sizes = torch.tensor([image_pil.size[::-1]])
+    results_detr = processor_detr.post_process_object_detection(outputs, target_sizes=target_sizes, threshold=0.5)[0]
+    for box in results_detr["boxes"]:
+        detections.append({
+            "bbox": box.tolist(),
+            "model": "detr"
+        })
+
+    # Send analyzed response
+    print(f"✅ Processed image {file.filename} for session {user_id}, detected {len(detections)} objects.")
+    return {"user_id": user_id, "detections": detections}
+
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=7860)
