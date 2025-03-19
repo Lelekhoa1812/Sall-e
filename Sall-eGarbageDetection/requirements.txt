@@ -9,7 +9,7 @@ ffmpeg-python
 torchvision
 torchaudio
 timm
-requests
+# requests
 
 # Model setup
 ultralytics

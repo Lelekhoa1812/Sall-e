@@ -10,7 +10,6 @@ import os
 import shutil
 import uvicorn
 import threading
-import requests
 import uuid
 import time
 # Video generation
