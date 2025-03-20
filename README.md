@@ -13,7 +13,8 @@ The "Sall-e" project aims to address this issue by developing an integrated syst
 <img src="src/polluted.jpg" alt="Polluted Ocean" style="width: 80%; max-width: 1000px;">  
 
 [ACCESSING UI DEMO 🤗](https://binkhoale1812-sall-egarbagedetection.hf.space/ui)
-[Using our API to detect garbage 🔗](https://binkhoale1812-sall-egarbagedetection.hf.space/analyze)
+[Using API to detect garbage 🔗](https://binkhoale1812-sall-egarbagedetection.hf.space/analyze)
+[Robotic script for Sall-e 🤖](https://github.com/Lelekhoa1812/Sall-e/Sall-eGarbageDetection/bot.py)
 
 ---
 
