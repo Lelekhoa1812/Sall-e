@@ -243,7 +243,7 @@ Run simulation - generate video:
 /crop.py               # crop object from data sample
 /synthetic.py          # generate synthetic testing img simulating ocean top-view
 /detect.py             # generate img simulating garbage detection on ocean
-/segment.py            # UPerNet segment model of river (target) avoid obstacles (rock, shore)
+/segment.py            # segment model UPerNet - river (target) avoid obstacles (rock, shore)
 /Inference.ipynb       # example usages of 3 external models (from HF) for backup
 /crop/                 # cropped .png images sample from various garbage classes
   ├── plastic/
@@ -282,6 +282,31 @@ We acknowledge the use of the **[Garbage Detection UAV](https://en.wikipedia.org
 The dataset encompasses a diverse range of garbage types, providing a robust foundation for training the object detection model.
 
 ---
+
+## **Segmentation Model on Obstacle Avoidance and Riverbank Allowance**  🏷️
+
+<details>
+  <summary><strong>Segmentation Visualization on Clear Water</strong></summary>
+    <img src="src/segment1.jpeg" alt="Segment Clear" style="width: 80%; max-width: 1000px;">  
+</details>
+
+<details>
+  <summary><strong>Segmentation Visualization on Polluted Water</strong></summary>
+    <img src="src/segment2.png" alt="Segment Polluted" style="width: 80%; max-width: 1000px;">  
+</details>
+
+| Color         | Class Name           | Semantic Meaning                              |
+|---------------|----------------------|-----------------------------------------------|
+| **Dark Red**  | Water                | Likely the river / water body                 |
+| **Blue**      | Sky or background    | Often incorrectly fills empty areas           | 
+| **Grey**      | Grass / field        | Could be open land or sediment                |
+| **Moss**      | Pollution            | Garbage, wastewater, debris                   |
+| **Green**     | Tree / Forest        | Vegetation or riverbank trees                 |
+| **Bright Red**| Structure            | Might be misclassified for rocks context-wise |
+| **Cyan**      | Obstacle             | Possibly bridge, boat, docks, other obstacles |
+| **Black**     | No prediction        | Area is uncertain                             |
+
+--- 
 
 ## **Conclusion** 🚀
 
