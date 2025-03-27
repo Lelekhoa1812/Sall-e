@@ -12,9 +12,30 @@ The "Sall-e" project aims to address this issue by developing an integrated syst
 
 <img src="src/polluted.jpg" alt="Polluted Ocean" style="width: 80%; max-width: 1000px;">  
 
-[ACCESSING UI DEMO 🤗](https://binkhoale1812-sall-egarbagedetection.hf.space/ui)
-[Using API to detect garbage 🔗](https://binkhoale1812-sall-egarbagedetection.hf.space/analyze)
-[Robotic script for Sall-e 🤖](https://github.com/Lelekhoa1812/Sall-e/Sall-eGarbageDetection/bot.py)
+[ACCESSING UI DEMO 🤗](https://binkhoale1812-sall-egarbagedetection.hf.space/ui)  
+[Using API to detect garbage 🔗](https://binkhoale1812-sall-egarbagedetection.hf.space/analyze)  
+[Robotic script for Sall-e 🤖](https://github.com/Lelekhoa1812/Sall-e/Sall-eGarbageDetection/bot.py)  
+
+---
+
+## **Project Target** 🎯 
+
+Citarum River in Indonesia is acclaimed as one of the most polluted rivers in the world, choking with heap upon heaps of plastic wastes, household wastes, and industrial wastes slipped into the river. The river daily admits wastage of nearly 20,000 tons and 340,000 tons of wastewater, which creates a very agitative barrier in the biodiversity of this part of the world, disturbing public health, local economies, and millions of them land down to this river to meet the daily needs [1](https://indonesiaexpat.id/news/citarum-river-the-most-polluted-river-in-theworld/)[2](https://www.adb.org/results/revitalizing-citarum-river).
+
+Conventional cleanup operations employed by local authorities and NGOs are predominantly manual, labor-intensive, and costs the government and NGOs millions annually while failing to mitigate the crisis sustainably. Workers often dredge waste with simple tools while facing severe pollution, toxic chemicals, and drowning hazards [3](https://www.theguardian.com/globaldevelopment/
+2020/nov/02/rotten-river-life-on-one-of-the-worlds-most-polluted-waterways-photoessay). The situation underscore an urgent necessity for innovative, autonomous solutions capable of continuously detecting, localizing, and collecting floating debris while minimizing ecological disturbance.
+
+**Key Technologies:**
+- AI-Powered Detection: YOLOv11l (custom-trained from Garbage UAV Dataset), external
+YOLOv5, DETR models.
+- GPS Localization: Real-time translation of drone-based pixel detections into real-world GPS
+coordinates using drone altitude data.
+- Navigation Optimization: Path planning via A* and KNN algorithms.
+- Drone Communication: Real-time wireless streaming of drone-captured ocean video feeds,
+including altitude data.
+- Obstacle and Riverbank Detection: Mask R-CNN and UPerNet/DeepLabV3+ architectures.
+- Post garbage-collection recycling: YOLOv11s model (custom-trained from self-collected garbage
+data)
 
 ---
 
