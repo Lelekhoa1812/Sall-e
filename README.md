@@ -315,16 +315,17 @@ The dataset encompasses a diverse range of garbage types, providing a robust fou
     <img src="src/segment2.png" alt="Segment Polluted" style="width: 80%; max-width: 1000px;">  
 </details>
 
-| Color         | Class Name           | Semantic Meaning                              |
-|---------------|----------------------|-----------------------------------------------|
-| **Dark Red**  | Water                | Likely the river / water body                 |
-| **Blue**      | Sky or background    | Often incorrectly fills empty areas           | 
-| **Grey**      | Grass / field        | Could be open land or sediment                |
-| **Moss**      | Pollution            | Garbage, wastewater, debris                   |
-| **Green**     | Tree / Forest        | Vegetation or riverbank trees                 |
-| **Bright Red**| Structure            | Might be misclassified for rocks context-wise |
-| **Cyan**      | Obstacle             | Possibly bridge, boat, docks, other obstacles |
-| **Black**     | No prediction        | Area is uncertain                             |
+| Color Sample | RGB Values         | Class Description           |
+|--------------|--------------------|-----------------------------|
+| ![#96053d](https://via.placeholder.com/20/96053d/000000?text=+) | (150, 5, 61)     | Garbage / Debris           |
+| ![#0066c8](https://via.placeholder.com/20/0066c8/000000?text=+) | (0, 102, 200)    | Water                      |
+| ![#800032](https://via.placeholder.com/20/800032/000000?text=+) | (128, 0, 50)     | Riverbank / Mudland        |
+| ![#e68f00](https://via.placeholder.com/20/e68f00/000000?text=+) | (255, 143, 0)    | Rocks / Dry Obstacle       |
+| ![#0a4f47](https://via.placeholder.com/20/0a4f47/000000?text=+) | (10, 79, 71)     | Vegetation (Bush/Tree)     |
+| ![#00ff8c](https://via.placeholder.com/20/00ff8c/000000?text=+) | (0, 255, 140)    | Weed / Algae Surface       |
+| ![#e6e6e6](https://via.placeholder.com/20/e6e6e6/000000?text=+) | (230, 230, 230)  | Sandy or Washed Shoreline  |
+| ![#ff060a](https://via.placeholder.com/20/ff060a/000000?text=+) | (255, 6, 10)     | Human-made structure (Boat or Plastic cluster) |
+| ![#1200ff](https://via.placeholder.com/20/1200ff/000000?text=+) | (18, 0, 255)     | Urban Surface / Metal Obstacle |
 
 --- 
 
