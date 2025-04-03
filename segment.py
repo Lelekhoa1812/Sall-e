@@ -1,3 +1,4 @@
+
 import torch
 from transformers import SegformerFeatureExtractor, SegformerForSemanticSegmentation
 from PIL import Image
@@ -60,16 +61,21 @@ ade_palette = np.array([
 
 # Custom color-to-class-name mapping (grouped)
 custom_class_map = {
-    "Garbage / Debris":        [(150, 5, 61)],
+    "Garbage":                 [(150, 5, 61)],
     "Water":                   [(0, 102, 200), (11, 102, 255), (31, 0, 255)],
     "Grass / Vegetation":      [(10, 255, 71), (143, 255, 140)],
     "Tree / Natural Obstacle": [(4, 200, 3), (235, 12, 255), (255, 6, 82), (255, 163, 0)],
     "Sand / Soil / Ground":    [(80, 50, 50), (230, 230, 230)],
-    "Buildings / Structures":  [(255, 0, 255), (184, 0, 255)],
+    "Buildings / Structures":  [(255, 0, 255), (184, 0, 255), (120, 120, 120), (7, 255, 224)],
     "Sky / Background":        [(180, 120, 120)],
     "Undetecable":             [(0, 0, 0)],
     "Unknown Class": []
 }
+
+# Identify ADE20K class IDs for water and garbage
+id2label = model.config.id2label
+water_class_ids = [int(idx) for idx, name in id2label.items() if "water" in name.lower()]
+garbage_class_ids = [int(idx) for idx, name in id2label.items() if "garbage" in name.lower()]
 
 # Build RGB class reverse lookup: (r,g,b) -> class name
 rgb_to_name = {}
@@ -82,24 +88,44 @@ decoded_mask = np.zeros((*segmentation.shape, 3), dtype=np.uint8)
 for label in np.unique(segmentation):
     decoded_mask[segmentation == label] = ade_palette[label]
 
+# Approximate RGB class matching with ±30 tolerance
+TOLERANCE = 30
+def match_rgb_to_class(rgb, rgb_class_map, tolerance=TOLERANCE):
+    for class_name, rgb_list in rgb_class_map.items():
+        for ref_rgb in rgb_list:
+            if all(abs(c1 - c2) <= tolerance for c1, c2 in zip(rgb, ref_rgb)):
+                return class_name
+    return "Unknown Class"
+
+# Get pixel coordinates by mapping from segmentation
+class_mask = np.empty(segmentation.shape, dtype=object)
+for y in range(segmentation.shape[0]):
+    for x in range(segmentation.shape[1]):
+        rgb = tuple(decoded_mask[y, x])
+        class_mask[y, x] = match_rgb_to_class(rgb, custom_class_map)
+water_coords = np.argwhere(class_mask == "Water")
+garbage_coords = np.argwhere(class_mask == "Garbage")
+if len(water_coords) > 0:
+    print("Total water coordination (pixels) detected ", len(water_coords))
+if len(garbage_coords) > 0:
+    print("Total garbage coordination (pixels) detected ", len(garbage_coords))
+
 # Show original image and mask
 fig, ax = plt.subplots(1, 2, figsize=(14, 6))
 ax[0].imshow(image)
 ax[0].set_title("Original Image")
 ax[0].axis("off")
 ax[1].imshow(decoded_mask)
-ax[1].set_title("Segmented Image (Riverbank / Obstacles Approx.)")
+ax[1].set_title("Segmented Image (Overlay Garbage / Water Coordinations)")
+if len(water_coords) > 0:
+    print("Total water coordination (pixels) detected")
+    ax[1].scatter(water_coords[:, 1], water_coords[:, 0], s=1, c='blue', label='Water')
+if len(garbage_coords) > 0:
+    ax[1].scatter(garbage_coords[:, 1], garbage_coords[:, 0], s=1, c='red', label='Garbage')
+ax[1].legend(loc='upper right')
 ax[1].axis("off")
 plt.tight_layout()
 plt.show()
-
-# Approximate RGB class matching with ±30 tolerance
-def match_rgb_to_class(rgb, rgb_class_map, tolerance=30):
-    for class_name, rgb_list in rgb_class_map.items():
-        for ref_rgb in rgb_list:
-            if all(abs(c1 - c2) <= tolerance for c1, c2 in zip(rgb, ref_rgb)):
-                return class_name
-    return "Unknown Class"
 
 # Create a grouped legend: Class → all RGB values
 from collections import defaultdict
@@ -108,7 +134,7 @@ used_labels = np.unique(segmentation)
 # Append label as color + class name (unknown exception)
 for label in used_labels:
     rgb = tuple(ade_palette[label])
-    class_name = match_rgb_to_class(rgb, custom_class_map, tolerance=30)
+    class_name = match_rgb_to_class(rgb, custom_class_map)
     legend[class_name].append(rgb)
 
 # Plot legend as table
