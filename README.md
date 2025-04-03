@@ -316,7 +316,7 @@ The dataset encompasses a diverse range of garbage types, providing a robust fou
 </details>
 
 | Color | RGB Values        | Class Description            |
-|-------|-------------------|----------|------------------------------|
+|-------|-------------------|------------------------------|
 | <div style="width:20px;height:20px;background:#96053d;border-radius:4px"></div> | (150, 5, 61)   |  Garbage / Debris            |
 | <div style="width:20px;height:20px;background:#0066c8;border-radius:4px"></div> | (0, 102, 200)  | Water                        |
 | <div style="width:20px;height:20px;background:#800032;border-radius:4px"></div> | (128, 0, 50)   | Riverbank / Mudland          |
