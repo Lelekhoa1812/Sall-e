@@ -307,26 +307,13 @@ The dataset encompasses a diverse range of garbage types, providing a robust fou
 
 <details>
   <summary><strong>Segmentation Visualization on Clear Water</strong></summary>
-    <img src="src/segment1.jpeg" alt="Segment Clear" style="width: 80%; max-width: 1000px;">  
+    <img src="src/segment1.png" alt="Segment Clear" style="width: 80%; max-width: 1000px;">  
 </details>
 
 <details>
   <summary><strong>Segmentation Visualization on Polluted Water</strong></summary>
     <img src="src/segment2.png" alt="Segment Polluted" style="width: 80%; max-width: 1000px;">  
 </details>
-
-| Color | RGB Values        | Class Description            |
-|-------|-------------------|------------------------------|
-| <div style="width:20px;height:20px;background:#96053d;border-radius:4px"></div> | (150, 5, 61)   |  Garbage / Debris            |
-| <div style="width:20px;height:20px;background:#0066c8;border-radius:4px"></div> | (0, 102, 200)  | Water                        |
-| <div style="width:20px;height:20px;background:#800032;border-radius:4px"></div> | (128, 0, 50)   | Riverbank / Mudland          |
-| <div style="width:20px;height:20px;background:#ff8f00;border-radius:4px"></div> | (255, 143, 0)  | Rocks / Dry Obstacle         |
-| <div style="width:20px;height:20px;background:#0a4f47;border-radius:4px"></div> | (10, 79, 71)   | Vegetation (Bush / Tree)     |
-| <div style="width:20px;height:20px;background:#00ff8c;border-radius:4px"></div> | (0, 255, 140)  | Weed / Algae Surface         |
-| <div style="width:20px;height:20px;background:#e6e6e6;border-radius:4px"></div> | (230, 230, 230)| Sandy or Washed Shoreline    |
-| <div style="width:20px;height:20px;background:#ff060a;border-radius:4px"></div> | (255, 6, 10)   | Plastic Cluster / Small Boat |
-| <div style="width:20px;height:20px;background:#1200ff;border-radius:4px"></div> | (18, 0, 255)   | Urban Surface / Obstacle     |
-
 
 
 --- 
