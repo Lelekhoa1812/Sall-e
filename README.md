@@ -264,7 +264,6 @@ Run simulation - generate video:
 /synthetic.py          # generate synthetic testing img simulating ocean top-view
 /detect.py             # generate img simulating garbage detection on ocean
 /segment.py            # segment model UPerNet - river (target) avoid obstacles (rock, shore)
-/Inference.ipynb       # example usages of 3 external models (from HF) for backup
 /crop/                 # cropped .png images sample from various garbage classes
   ├── plastic/
   ├── metal/
