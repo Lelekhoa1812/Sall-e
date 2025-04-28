@@ -1,124 +1,158 @@
-# Common endpoint: https://binkhoale1812-sall-egarbagedetection.hf.space/...
-# UI Endpoint: https://binkhoale1812-sall-egarbagedetection.hf.space/ui
-# Analyze API: https://binkhoale1812-sall-egarbagedetection.hf.space/analyze
+# ───────────────────────── app.py (Sall-e demo) ─────────────────────────
+# FastAPI ▸ upload image ▸ multi-model garbage detection ▸ ADE-20K
+# semantic segmentation (Water / Garbage) ▸ A* + KNN navigation ▸ H.264 video
+# =======================================================================
 
-# Server startup
-from fastapi import FastAPI, File, UploadFile, Request
-from fastapi.responses import HTMLResponse, FileResponse, Response, StreamingResponse
-from fastapi.staticfiles import StaticFiles
-import os
-import shutil
-import uvicorn
-import threading
-import uuid
-import time
-# Video generation
-import cv2
-import numpy as np
+import os, uuid, threading, shutil, time, heapq, cv2, numpy as np
 from PIL import Image
-import torch
-import yolov5
-import ffmpeg
+import uvicorn
+from fastapi import FastAPI, File, UploadFile, Request
+from fastapi.responses import HTMLResponse, StreamingResponse, Response
+from fastapi.staticfiles import StaticFiles
+
+# ── Vision libs ─────────────────────────────────────────────────────────
+import torch, yolov5, ffmpeg
 from ultralytics import YOLO
-from transformers import DetrImageProcessor, DetrForObjectDetection
+from transformers import (
+    DetrImageProcessor, DetrForObjectDetection,
+    SegformerFeatureExtractor, SegformerForSemanticSegmentation
+)
+from sklearn.neighbors import NearestNeighbors
 
+# ── Folders / files ─────────────────────────────────────────────────────
+BASE        = "/home/user/app"
+CACHE       = f"{BASE}/cache"
+UPLOAD_DIR  = f"{CACHE}/uploads"
+OUTPUT_DIR  = f"{BASE}/outputs"
+MODEL_DIR   = f"{BASE}/model"
+SPRITE      = f"{BASE}/sprite.png"
+BG_IMG      = f"{BASE}/ocean1.jpg"          # background (640×640)
 
-# Initialize FastAPI app
-app = FastAPI()
-video_ready = {}  # Dictionary to track video status for each user
-
-
-# Define paths
-UPLOAD_FOLDER = "/home/user/app/cache/uploads"
-OUTPUT_DIR = "/home/user/app/outputs"
-SPRITE_PATH = "/home/user/app/sprite.png"
-ICON_PATH = "/home/user/app/icon.png"
-OUTPUT_VIDEO_MP4 = os.path.join(OUTPUT_DIR, "simulation.mp4")  
-# Ensure upload folder exists
-os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+os.makedirs(UPLOAD_DIR, exist_ok=True)
 os.makedirs(OUTPUT_DIR, exist_ok=True)
+os.makedirs(CACHE     , exist_ok=True)
+os.environ["TRANSFORMERS_CACHE"] = CACHE
+os.environ["HF_HOME"]           = CACHE
 
+# ── Load models once  ───────────────────────────────────────────────────
+print("🔄  Loading models …")
+model_self  = YOLO(f"{MODEL_DIR}/garbage_detector.pt")                 # YOLOv11(l)
+model_yolo5 = yolov5.load(f"{MODEL_DIR}/yolov5-detect-trash-classification.pt")
+processor_detr = DetrImageProcessor.from_pretrained(f"{MODEL_DIR}/detr")
+model_detr     = DetrForObjectDetection.from_pretrained(f"{MODEL_DIR}/detr")
+feat_extractor = SegformerFeatureExtractor.from_pretrained(
+                    "nvidia/segformer-b4-finetuned-ade-512-512")
+segformer      = SegformerForSemanticSegmentation.from_pretrained(
+                    "nvidia/segformer-b4-finetuned-ade-512-512")
+print("✅  Models ready\n")
 
-# Set Hugging Face cache directory to a writable location
-CACHE_DIR = "/home/user/app/cache"
-os.environ["TRANSFORMERS_CACHE"] = CACHE_DIR
-os.environ["HF_HOME"] = CACHE_DIR
+# ── ADE-20K palette + custom mapping (verbatim) ─────────────────────────
+# ADE20K palette
+ade_palette = np.array([
+    [0, 0, 0], [120, 120, 120], [180, 120, 120], [6, 230, 230], [80, 50, 50],
+    [4, 200, 3], [120, 120, 80], [140, 140, 140], [204, 5, 255], [230, 230, 230],
+    [4, 250, 7], [224, 5, 255], [235, 255, 7], [150, 5, 61], [120, 120, 70],
+    [8, 255, 51], [255, 6, 82], [143, 255, 140], [204, 255, 4], [255, 51, 7],
+    [204, 70, 3], [0, 102, 200], [61, 230, 250], [255, 6, 51], [11, 102, 255],
+    [255, 7, 71], [255, 9, 224], [9, 7, 230], [220, 220, 220], [255, 9, 92],
+    [112, 9, 255], [8, 255, 214], [7, 255, 224], [255, 184, 6], [10, 255, 71],
+    [255, 41, 10], [7, 255, 255], [224, 255, 8], [102, 8, 255], [255, 61, 6],
+    [255, 194, 7], [255, 122, 8], [0, 255, 20], [255, 8, 41], [255, 5, 153],
+    [6, 51, 255], [235, 12, 255], [160, 150, 20], [0, 163, 255], [140, 140, 140],
+    [250, 10, 15], [20, 255, 0], [31, 255, 0], [255, 31, 0], [255, 224, 0],
+    [153, 255, 0], [0, 0, 255], [255, 71, 0], [0, 235, 255], [0, 173, 255],
+    [31, 0, 255], [11, 200, 200], [255, 82, 0], [0, 255, 245], [0, 61, 255],
+    [0, 255, 112], [0, 255, 133], [255, 0, 0], [255, 163, 0], [255, 102, 0],
+    [194, 255, 0], [0, 143, 255], [51, 255, 0], [0, 82, 255], [0, 255, 41],
+    [0, 255, 173], [10, 0, 255], [173, 255, 0], [0, 255, 153], [255, 92, 0],
+    [255, 0, 255], [255, 0, 245], [255, 0, 102], [255, 173, 0], [255, 0, 20],
+    [255, 184, 184], [0, 31, 255], [0, 255, 61], [0, 71, 255], [255, 0, 204],
+    [0, 255, 194], [0, 255, 82], [0, 10, 255], [0, 112, 255], [51, 0, 255],
+    [0, 194, 255], [0, 122, 255], [0, 255, 163], [255, 153, 0], [0, 255, 10],
+    [255, 112, 0], [143, 255, 0], [82, 0, 255], [163, 255, 0], [255, 235, 0],
+    [8, 184, 170], [133, 0, 255], [0, 255, 92], [184, 0, 255], [255, 0, 31],
+    [0, 184, 255], [0, 214, 255], [255, 0, 112], [92, 255, 0], [0, 224, 255],
+    [112, 224, 255], [70, 184, 160], [163, 0, 255], [153, 0, 255], [71, 255, 0],
+    [255, 0, 163], [255, 204, 0], [255, 0, 143], [0, 255, 235], [133, 255, 0],
+    [255, 0, 235], [245, 0, 255], [255, 0, 122], [255, 245, 0], [10, 190, 212],
+    [214, 255, 0], [0, 204, 255], [20, 0, 255], [255, 255, 0], [0, 153, 255],
+    [0, 41, 255], [0, 255, 204], [41, 0, 255], [41, 255, 0], [173, 0, 255],
+    [0, 245, 255], [71, 0, 255], [122, 0, 255], [0, 255, 184], [0, 92, 255],
+    [184, 255, 0], [0, 133, 255], [255, 214, 0], [25, 194, 194], [102, 255, 0],
+    [92, 0, 255]
+], dtype=np.uint8)
 
+custom_class_map = {
+    "Garbage":                 [(150, 5, 61)],
+    "Water":                   [(0, 102, 200), (11, 102, 255), (31, 0, 255)],
+    "Grass / Vegetation":      [(10, 255, 71), (143, 255, 140)],
+    "Tree / Natural Obstacle": [(4, 200, 3), (235, 12, 255), (255, 6, 82), (255, 163, 0)],
+    "Sand / Soil / Ground":    [(80, 50, 50), (230, 230, 230)],
+    "Buildings / Structures":  [(255, 0, 255), (184, 0, 255), (120, 120, 120), (7, 255, 224)],
+    "Sky / Background":        [(180, 120, 120)],
+    "Undetecable":             [(0, 0, 0)],
+    "Unknown Class": []
+}
+TOL = 30  # RGB tolerance
 
-# Define model paths
-MODEL_FOLDER = "/home/user/app/model"
-MODEL_PATH_SELF = os.path.join(MODEL_FOLDER, "garbage_detector.pt")
-MODEL_PATH_YOLO5 = os.path.join(MODEL_FOLDER, "yolov5-detect-trash-classification.pt")
-MODEL_PATH_DETR = os.path.join(MODEL_FOLDER, "detr")
+def build_mask(seg):                      # seg = (H,W) label ids
+    decoded = ade_palette[seg]            # (H,W,3)
+    water_mask = np.zeros(seg.shape, np.uint8)
+    for rgb in custom_class_map["Water"]:
+        diff = np.abs(decoded - rgb).max(axis=-1) <= TOL
+        water_mask |= diff
+    return water_mask                     # 1 = water, 0 = obstacle
 
+# ── A* over binary water grid ───────────────────────────────────────────
+def astar(start, goal, occ):
+    h   = lambda a,b: abs(a[0]-b[0])+abs(a[1]-b[1])
+    N8  = [(-1,-1),(-1,0),(-1,1),(0,-1),(0,1),(1,-1),(1,0),(1,1)]
+    openq=[(0,start)]; g={start:0}; came={}
+    while openq:
+        _,cur=heapq.heappop(openq)
+        if cur==goal:
+            p=[cur];                   # reconstruct
+            while cur in came: cur=came[cur]; p.append(cur)
+            return p[::-1]
+        for dx,dy in N8:
+            nx,ny=cur[0]+dx,cur[1]+dy
+            if not (0<=nx<640 and 0<=ny<640): continue
+            if occ[ny,nx]==0: continue
+            ng=g[cur]+1
+            if (nx,ny) not in g or ng<g[(nx,ny)]:
+                g[(nx,ny)]=ng
+                f=ng+h((nx,ny),goal)
+                heapq.heappush(openq,(f,(nx,ny)))
+                came[(nx,ny)]=cur
+    return []
 
-# Load models safely from the pre-downloaded directory
-print("🔄 Loading models...")
-try:
-    # Self-trained YOLO model
-    model_self = YOLO(MODEL_PATH_SELF)
-    print("✅ Self-trained YOLO model loaded.")
+def knn_path(start, targets, occ):
+    todo = targets[:]; path=[]
+    cur  = tuple(start)
+    while todo:
+        nbrs = NearestNeighbors(n_neighbors=1).fit(todo)
+        _,idx = nbrs.kneighbors([cur]); nxt=tuple(todo[idx[0][0]])
+        seg  = astar(cur, nxt, occ)
+        if seg:
+            if path and seg[0]==path[-1]: seg=seg[1:]
+            path.extend(seg)
+        cur  = nxt; todo.remove(list(nxt))
+    return path
 
-    # YOLOv5 Model
-    model_yolo5 = yolov5.load(MODEL_PATH_YOLO5)
-    print("✅ YOLOv5 model loaded.")
-
-    # DETR Model
-    processor_detr = DetrImageProcessor.from_pretrained(MODEL_PATH_DETR)
-    model_detr = DetrForObjectDetection.from_pretrained(MODEL_PATH_DETR)
-    print("✅ DETR model loaded.")
-except Exception as e:
-    print(f"❌ Error loading models: {e}")
-
-print("✅ Model loading complete. Running application.")
-
-
-# Re-trigger setup, ensure directory setup before starting up the app
-import setup
-setup.print_model()
-setup.print_cache()
-# Ensure simulation.mp4 exists as a placeholder
-if not os.path.exists(OUTPUT_VIDEO_MP4):
-    cap = cv2.VideoWriter(OUTPUT_VIDEO_MP4, cv2.VideoWriter_fourcc(*"mp4v"), 10.0, (640, 640))
-    cap.release()
-
-
-# Robot class for navigation and collection
+# ── Robot sprite ────────────────────────────────────────────────────────
 class Robot:
-    def __init__(self, image_path, speed=20):
-        self.image = Image.open(image_path).convert("RGBA").resize((40, 40))
-        self.image_np = np.array(self.image)
-        self.position = [0, 0]
-        self.angle = 0  # Initially pointing right (90 deg)
-        self.speed = speed
+    def __init__(self, sprite, speed=20):
+        self.png = np.array(Image.open(sprite).convert("RGBA").resize((40,40)))
+        self.pos = [0,0]; self.speed=speed
+    def step(self, path):
+        if not path: return
+        dx,dy = path[0][0]-self.pos[0], path[0][1]-self.pos[1]
+        dist = (dx*dx+dy*dy)**0.5
+        if dist<=self.speed:
+            self.pos=list(path.pop(0)); return
+        r=self.speed/dist; self.pos=[int(self.pos[0]+dx*r), int(self.pos[1]+dy*r)]
 
-    def find_nearest_garbage(self, objects):
-        '''Find the closest garbage object (dist can be in diagonal move)'''
-        nearest = None
-        min_dist = float("inf")
-        for obj in objects:
-            if obj["collected"]:
-                continue
-            dist = np.linalg.norm(np.array(self.position) - np.array(obj["position"]))
-            if dist < min_dist:
-                min_dist = dist
-                nearest = obj
-        return nearest
-
-    def move_towards(self, target):
-        '''Move robot towards the closest garbage object, can move in diagonal direction'''
-        if target:
-            dx, dy = np.array(target["position"]) - np.array(self.position)
-            distance = np.linalg.norm([dx, dy])
-            if distance > self.speed:
-                dx, dy = (dx / distance) * self.speed, (dy / distance) * self.speed
-            self.position[0] += int(dx)
-            self.position[1] += int(dy)
-            self.angle = np.degrees(np.arctan2(dy, dx))
-            if distance <= self.speed:
-                target["collected"] = True
-
-
+# ── FastAPI & HTML content (original styling) ───────────────────────────
 # HTML Content for UI
 HTML_CONTENT = """
 <!DOCTYPE html>
@@ -260,255 +294,98 @@ HTML_CONTENT = """
 </html>
 """
 
+app = FastAPI()
+app.mount("/static", StaticFiles(directory=BASE), name="static")
+video_ready={}
+@app.get("/ui", response_class=HTMLResponse)
+def ui(): return HTML_CONTENT
+def _uid(): return uuid.uuid4().hex[:8]
 
-# Frontend static FastAPI
-app.mount("/static", StaticFiles(directory="/home/user/app"), name="static")
-@app.get("/ui")
-async def main():
-    return HTMLResponse(content=HTML_CONTENT)
-
-
-def generate_unique_filename():
-    """Generate a unique filename for each user session."""
-    return str(uuid.uuid4())[:8]  # Shorter random ID
-
-
-# Endpoint uploading an image
+# ── End-points ──────────────────────────────────────────────────────────
 @app.post("/upload/")
-async def upload_file(request: Request, file: UploadFile = File(...)):
-    user_id = generate_unique_filename()
-    print(f"Session id {user_id}")
-    file_path = os.path.join(UPLOAD_FOLDER, f"{user_id}_{file.filename}")
-    with open(file_path, "wb") as buffer:
-        shutil.copyfileobj(file.file, buffer)
-    thread = threading.Thread(target=process_image, args=(file_path, user_id))
-    thread.start()
-    return {"message": "File uploaded successfully!", "user_id": user_id}
+async def upload(file:UploadFile=File(...)):
+    uid=_uid(); dest=f"{UPLOAD_DIR}/{uid}_{file.filename}"
+    with open(dest,"wb") as bf: shutil.copyfileobj(file.file,bf)
+    threading.Thread(target=_pipeline, args=(uid,dest)).start()
+    return {"user_id":uid}
 
+@app.get("/check_video/{uid}")
+def chk(uid:str): return {"ready":video_ready.get(uid,False)}
 
-# Endpoint generating and accessing the video
-@app.get("/video/{user_id}")
-async def get_video(user_id: str):
-    video_path = os.path.join(OUTPUT_DIR, f"{user_id}_simulation_h264.mp4")
-    if not os.path.exists(video_path) or os.path.getsize(video_path) < 100_000:
-        return Response(content="Video file not found!", status_code=404)
-    def iterfile():
-        with open(video_path, mode="rb") as file:
-            yield from file
-    return StreamingResponse(iterfile(), media_type="video/mp4", headers={
-        "Content-Disposition": "inline; filename={user_id}_simulation.mp4",
-        "Cache-Control": "no-cache, no-store, must-revalidate",
-        "Pragma": "no-cache",
-        "Expires": "0"
-    })
+@app.get("/video/{uid}")
+def stream(uid:str):
+    vid=f"{OUTPUT_DIR}/{uid}.mp4"
+    if not os.path.exists(vid): return Response(status_code=404)
+    return StreamingResponse(open(vid,"rb"), media_type="video/mp4")
 
+# ── Core pipeline (runs in background thread) ───────────────────────────
+def _pipeline(uid,img_path):
+    print(f"▶️ [{uid}] processing")
+    bgr=cv2.resize(cv2.imread(img_path),(640,640)); rgb=cv2.cvtColor(bgr,cv2.COLOR_BGR2RGB)
+    pil=Image.fromarray(rgb)
 
-# Ensure video ready state, hide loader and show video + download btn
-@app.get("/check_video/{user_id}")
-async def check_video(user_id: str):
-    """Check if the video for a specific user is ready."""
-    video_path = os.path.join(OUTPUT_DIR, f"{user_id}_simulation_h264.mp4")
-    min_valid_size = 100_000  # Minimum valid file size 100kB
-    return {"ready": video_ready.get(user_id, False) and os.path.exists(video_path) and os.path.getsize(video_path) > min_valid_size}
-
-# Debug endpoints
-@app.get("/debug/list_files")
-async def list_files():
-    cache_files = os.listdir("/home/user/app/cache/")
-    output_files = os.listdir("/home/user/app/outputs/")
-    return {
-        "cache_files": cache_files,
-        "output_files": output_files
-    }
-@app.get("/debug/video_info/{user_id}")
-async def debug_video_info(user_id: str):
-    """Returns debug info about a user's video file."""
-    video_path = os.path.join(OUTPUT_DIR, f"{user_id}_simulation_h264.mp4")
-    if not os.path.exists(video_path):
-        return {"error": f"Video file for user {user_id} not found!"}
-    file_size = os.path.getsize(video_path)
-    return {
-        "file_path": video_path,
-        "file_size": file_size,
-        "playable": file_size > 100_000
-    }
-
-
-def convert_video_to_h264(input_video, output_video):
-    """Convert video to H.264 for better compatibility."""
-    try:
-        ffmpeg.input(input_video).output(output_video, vcodec="libx264", format="mp4").run(overwrite_output=True)
-        print(f"✅ Video converted to H.264: {output_video}")
-        return output_video
-    except Exception as e:
-        print(f"❌ Error converting video {output_video}, revert back {input_video}: {e}")
-        return input_video  # Fallback to original file
-
-
-def set_file_permissions(file_path):
-    '''Ensure user has read access to view file (some browser may block this)'''
-    try:
-        os.chmod(file_path, 0o644)  # Allow read access
-        print(f"✅ File permissions set: {file_path}")
-    except Exception as e:
-        print(f"❌ Error setting permissions for {file_path}: {e}")
-
-
-def is_video_accessible(user_id: str):
-    """Checks if the video file exists and is valid without external HTTP requests."""
-    video_path = os.path.join(OUTPUT_DIR, f"{user_id}_simulation_h264.mp4")
-    if os.path.exists(video_path):
-        file_size = os.path.getsize(video_path)
-        if file_size > 100_000:  # Ensure file is large enough to be a valid video
-            print(f"✅ Video file for user {user_id} is accessible: {file_size} bytes")
-            return True
-        else:
-            print(f"⚠️ Warning: Video for user {user_id} exists but is too small ({file_size} bytes)")
-    else:
-        print(f"❌ Error: Video file for user {user_id} does not exist.")
-    return False
-
-
-# Garbage detection and video generation
-def process_image(image_path, user_id):
-    # Assign unique id
-    global video_ready
-    video_ready[user_id] = False  # Ensure video is marked as "not ready" initially
-    unique_filename = f"{user_id}_simulation.mp4"
-    unique_h264_filename = f"{user_id}_simulation_h264.mp4"
-    video_path = os.path.join(OUTPUT_DIR, unique_filename)
-    h264_path = os.path.join(OUTPUT_DIR, unique_h264_filename)
-
-    # Process the image
-    image = cv2.imread(image_path)
-    if image is None:
-        return
-    image = cv2.resize(image, (640, 640))
-    detections = []
-    
-    # Self-trained YOLOv11m
-    print(f"🔍 Running detection with Self-trained YOLO model for {user_id} session...")
-    results_self = model_self(image)
-    for result in results_self:
-        for box in result.boxes:
-            detections.append(box.xyxy[0].tolist())
-    
-    # YOLOv5 Model
-    print(f"🔍 Running detection with YOLOv5 model for {user_id} session...")
-    results_yolo5 = model_yolo5(image, size=416)
-    for result in results_yolo5.pred[0]:
-        detections.append(result[:4].tolist())
-    
-    # DETR Model
-    print(f"🔍 Running detection with DETR model for {user_id} session...")
-    image_pil = Image.open(image_path).convert("RGB")
-    inputs = processor_detr(images=image_pil, return_tensors="pt")
+    # 1- Segmentation → water mask
     with torch.no_grad():
-        outputs = model_detr(**inputs)
-    target_sizes = torch.tensor([image_pil.size[::-1]])
-    results_detr = processor_detr.post_process_object_detection(outputs, target_sizes=target_sizes, threshold=0.5)[0]
-    for box in results_detr["boxes"]:
-        detections.append(box.tolist())
+        seg_logits = segformer(**feat_extractor(pil,return_tensors="pt")).logits
+    seg = seg_logits.argmax(1)[0].cpu().numpy()
+    water_mask = build_mask(seg)                       # 1 = water
 
-    print(f"✅ Multi-modal detected {len(detections)} objects for {user_id} session.")
-    
-    # Initialize robot class
-    robot = Robot(SPRITE_PATH)
-    objects = [{"position": [int(x1), int(y1)], "collected": False} for x1, y1, x2, y2 in detections]
+    # 2- Garbage detection (3 models) → keep centres on water
+    detections=[]
+    for r in model_self(bgr):                    # YOLOv11
+        detections += [b.xyxy[0].tolist() for b in r.boxes]
+    for r in model_yolo5(bgr,size=416):          # YOLOv5
+        detections += [p[:4].tolist() for p in r.pred[0]]
+    inp=processor_detr(images=pil,return_tensors="pt")
+    with torch.no_grad(): out=model_detr(**inp)
+    post=processor_detr.post_process_object_detection(out,
+          torch.tensor([pil.size[::-1]]),threshold=0.5)[0]
+    detections += [b.tolist() for b in post["boxes"]]
+    # centre & mask filter
+    centres=[]
+    for x1,y1,x2,y2 in detections:
+        cx,cy=int((x1+x2)/2),int((y1+y2)/2)
+        if 0<=cx<640 and 0<=cy<640 and water_mask[cy,cx]:
+            centres.append([cx,cy])
+    if not centres:
+        print(f"🛑 [{uid}] no reachable garbage"); video_ready[uid]=True; return
 
-    # Save video file
-    fourcc = cv2.VideoWriter_fourcc(*"mp4v")
-    video_writer = cv2.VideoWriter(video_path, fourcc, 10.0, (640, 640)) 
+    # 3- Global route
+    robot = Robot(SPRITE)
+    path  = knn_path(robot.pos, centres, water_mask)
 
-    # Video writer (10 FPS, continuously write video until all garbage object are flagged `collected`)
-    while True:
-        frame = image.copy()
-        target = robot.find_nearest_garbage(objects)
-        robot.move_towards(target)
-        # Iterate each garbage object
-        for obj in objects:
-            x, y = obj["position"]
-            color = (0, 0, 255) if not obj["collected"] else (0, 255, 0)
-            label = "Detected" if not obj["collected"] else "Collected"
-            cv2.rectangle(frame, (x, y), (x + 20, y + 20), color, 2)
-            cv2.putText(frame, label, (x, y - 5), cv2.FONT_HERSHEY_SIMPLEX, 0.5, color, 2)
-        # Initialise the robot position and change their position upon new coordination
-        rx, ry = robot.position
-        for c in range(3):
-            frame[ry:ry+40, rx:rx+40, c] = robot.image_np[:, :, c]
-        # Write frame until all are in `collected` state
-        video_writer.write(frame)
-        if all(obj["collected"] for obj in objects):
-            break
+    # 4- Video synthesis
+    out_tmp=f"{OUTPUT_DIR}/{uid}_tmp.mp4"
+    vw=cv2.VideoWriter(out_tmp,cv2.VideoWriter_fourcc(*"mp4v"),10.0,(640,640))
+    objs=[{"pos":p,"col":False} for p in centres]
+    bg=cv2.imread(BG_IMG); bg=cv2.resize(bg,(640,640))
+    for _ in range(15000):                       # safety frames
+        frame=bg.copy()
+        # draw garbage
+        for o in objs:
+            color=(0,0,255) if not o["col"] else (0,255,0)
+            x,y=o["pos"]; cv2.circle(frame,(x,y),6,color,-1)
+        # robot
+        robot.step(path)
+        rx,ry=robot.pos; sp=robot.png
+        a=sp[:,:,3]/255.; bgroi=frame[ry:ry+40,rx:rx+40]
+        for c in range(3): bgroi[:,:,c]=a*sp[:,:,c]+(1-a)*bgroi[:,:,c]
+        frame[ry:ry+40,rx:rx+40]=bgroi
+        # collection check
+        for o in objs:
+            if not o["col"] and np.hypot(o["pos"][0]-rx,o["pos"][1]-ry)<=20:
+                o["col"]=True
+        vw.write(frame)
+        if all(o["col"] for o in objs): break
+        if not path: break
+    vw.release()
 
+    # 5- Convert to H.264
+    final=f"{OUTPUT_DIR}/{uid}.mp4"
+    ffmpeg.input(out_tmp).output(final,vcodec="libx264",pix_fmt="yuv420p").run(overwrite_output=True,quiet=True)
+    os.remove(out_tmp); video_ready[uid]=True
+    print(f"✅ [{uid}] video ready → {final}")
 
-    print(f"🎥 Video generated successfully for user {user_id}!")
-    video_writer.release()
-    converted_video = convert_video_to_h264(video_path, h264_path) # Convert to H.264 for better streaming compatibility
-    set_file_permissions(converted_video)
-    time.sleep(2)  # Short delay to ensure OS flushes the file to disk
-    os.sync()      # Force flush
-    video_ready[user_id] = True
-    if os.path.exists(converted_video) and os.path.getsize(converted_video) > 100_000 and is_video_accessible(user_id):
-        print(f"✅ Video successfully verified and saved at {converted_video} for session {user_id}")
-        return h264_path
-    else:
-        print(f"❌ ERROR: Video file not found after processing for session {user_id}!")
-        return None
-
-
-# API endpoint for user to extract bbox coordination from their image
-@app.post("/analyze/")
-async def analyze_file(file: UploadFile = File(...)):
-    user_id = generate_unique_filename()
-    print(f"Analyzing image for session: {user_id}")
-
-    # Save file
-    file_path = os.path.join(UPLOAD_FOLDER, f"{user_id}_{file.filename}")
-    with open(file_path, "wb") as buffer:
-        shutil.copyfileobj(file.file, buffer)
-
-    # Run detection
-    image = cv2.imread(file_path)
-    if image is None:
-        return {"error": "Failed to read image"}
-    image = cv2.resize(image, (640, 640))
-    detections = []
-
-    # Self-trained YOLOv11m Model
-    results_self = model_self(image)
-    for result in results_self:
-        for box in result.boxes:
-            detections.append({
-                "bbox": box.xyxy[0].tolist(),
-                "model": "self-trained"
-            })
-
-    # YOLOv5 Model
-    results_yolo5 = model_yolo5(image, size=416)
-    for result in results_yolo5.pred[0]:
-        detections.append({
-            "bbox": result[:4].tolist(),
-            "model": "yolov5"
-        })
-
-    # DETR Model
-    image_pil = Image.open(file_path).convert("RGB")
-    inputs = processor_detr(images=image_pil, return_tensors="pt")
-    with torch.no_grad():
-        outputs = model_detr(**inputs)
-    target_sizes = torch.tensor([image_pil.size[::-1]])
-    results_detr = processor_detr.post_process_object_detection(outputs, target_sizes=target_sizes, threshold=0.5)[0]
-    for box in results_detr["boxes"]:
-        detections.append({
-            "bbox": box.tolist(),
-            "model": "detr"
-        })
-
-    # Send analyzed response
-    print(f"✅ Processed image {file.filename} for session {user_id}, detected {len(detections)} objects.")
-    return {"user_id": user_id, "detections": detections}
-
-
-if __name__ == "__main__":
-    uvicorn.run(app, host="0.0.0.0", port=7860)
+# ── Run locally (HF Space ignores) ──────────────────────────────────────
+if __name__=="__main__":
+    uvicorn.run(app,host="0.0.0.0",port=7860)

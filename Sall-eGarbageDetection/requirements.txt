@@ -1,25 +1,27 @@
-# Image processing
+# Image Processing
 opencv-python-headless
-pillow-avif-plugin
 pillow
 numpy
+pillow-avif-plugin
 
-# Video processing
-ffmpeg-python
+# Vision Models
+torch
 torchvision
 torchaudio
-timm
-# requests
-
-# Model setup
 ultralytics
-transformers
-torch
-git-lfs
+timm
 yolov5
-
-# Server startup
-uvicorn
-fastapi
-python-multipart
+transformers
 huggingface_hub==0.14.1
+accelerate  # <-- New for SegFormer compatibility
+
+# Video Processing
+ffmpeg-python
+
+# Server
+fastapi
+uvicorn
+python-multipart
+
+# Git (needed for clone/setup LoveDA repo)
+git-lfs

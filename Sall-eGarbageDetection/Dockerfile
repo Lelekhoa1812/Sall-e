@@ -6,69 +6,67 @@ WORKDIR /app
 # Reduce Docker image size by cleaning up unused files
 RUN apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* ~/.cache/
 
-# Install system dependencies before switching users
+# Install system dependencies
 RUN apt-get update && apt-get install -y \
-    libgl1-mesa-glx libglib2.0-0 fontconfig && \
+    libgl1-mesa-glx libglib2.0-0 fontconfig \
+    git wget ffmpeg && \
     rm -rf /var/lib/apt/lists/*
 
 # Copy entrypoint script and make it executable
 COPY entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
 
-# Create a non-root user for better security
+# Create non-root user
 RUN useradd -m -u 1000 user
 USER root
 ENV HOME=/home/user
 
-# Install FFmpeg before running the app
-RUN apt-get update && apt-get install -y ffmpeg
-
-# Install Python dependencies (including `python-multipart`)
+# Install Python dependencies
 COPY requirements.txt ./
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Install Hugging Face CLI and required ML dependencies
-RUN pip install --no-cache-dir \
-    huggingface_hub==0.14.1 \
-    --extra-index-url https://download.pytorch.org/whl/cpu
+# Install Hugging Face CLI + required ML dependencies
+RUN pip install --no-cache-dir huggingface_hub==0.14.1 --extra-index-url https://download.pytorch.org/whl/cpu
+
+# Install LoveDA repository dependencies
+RUN git clone https://github.com/Junjue-Wang/LoveDA.git /home/user/LoveDA
+WORKDIR /home/user/LoveDA
+RUN pip install --no-cache-dir -r requirements.txt || true  # (ignores errors if any)
+
+# Return to working dir
+WORKDIR $HOME/app
 
 # Ensure Hugging Face CLI is accessible
 ENV PATH="/home/user/.local/bin:$PATH"
 
-# Create model/cache folder and ensure write permissions
-RUN mkdir -p /home/user/app/model /home/user/app/cache /home/user/app/cache/uploads && \
-    chown -R user:user /home/user/app && \
-    chmod -R 777 /home/user/app
+# Create model/cache folders
+RUN mkdir -p /home/user/app/model /home/user/app/cache/uploads && \
+    chown -R user:user /home/user/app && chmod -R 777 /home/user/app
 
-# Switch to non-root user before copying source code
+# Switch back to non-root user
 USER user
 WORKDIR $HOME/app
 
-# Copy source code **after** fixing permissions
+# Copy application source code
 COPY --chown=user . $HOME/app
 
-# Manually download DETR model using `snapshot_download()`
+# Pre-download all Hugging Face models
 RUN python -c "from huggingface_hub import snapshot_download; snapshot_download(repo_id='facebook/detr-resnet-50', local_dir='/home/user/app/model/detr', local_dir_use_symlinks=False)"
-
-# Download other necessary models
 RUN wget -O $HOME/app/model/garbage_detector.pt https://huggingface.co/BinKhoaLe1812/Garbage_Detection/resolve/main/garbage_detector.pt
 RUN wget -O $HOME/app/model/yolov5-detect-trash-classification.pt https://huggingface.co/turhancan97/yolov5-detect-trash-classification/resolve/main/yolov5s.pt
 
-# Ensure correct file permissions
-RUN chmod -R 777 $HOME/app
-
-# Verify model setup before running the app
+# Verify model setup
 RUN python setup.py
 
-# Remove previous video file each Docker restart to reduce storage
+# Clean outputs folder
 RUN rm -rf /home/user/app/outputs/*.mp4
 
-# Copy image sources
+# Copy static images
 COPY sprite.png /home/user/app/sprite.png
 COPY icon.png /home/user/app/icon.png
 
 # Expose FastAPI port
 EXPOSE 7860
 
-# Start FastAPI application using the entrypoint script
+# Start app
 ENTRYPOINT ["/entrypoint.sh"]
