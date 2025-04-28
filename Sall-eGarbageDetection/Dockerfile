@@ -26,7 +26,7 @@ COPY requirements.txt ./
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Install Hugging Face CLI + required ML dependencies
-RUN pip install --no-cache-dir huggingface_hub==0.14.1 --extra-index-url https://download.pytorch.org/whl/cpu
+RUN pip install --no-cache-dir huggingface_hub --upgrade
 
 # Install LoveDA repository dependencies
 RUN git clone https://github.com/Junjue-Wang/LoveDA.git /home/user/LoveDA

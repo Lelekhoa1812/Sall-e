@@ -8,12 +8,13 @@ pillow-avif-plugin
 torch
 torchvision
 torchaudio
+scikit-learn
 ultralytics
 timm
 yolov5
 transformers
-huggingface_hub==0.14.1
-accelerate  # <-- New for SegFormer compatibility
+huggingface_hub
+accelerate 
 
 # Video Processing
 ffmpeg-python
