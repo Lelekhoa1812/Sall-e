@@ -1,4 +1,3 @@
-
 import torch
 from transformers import SegformerFeatureExtractor, SegformerForSemanticSegmentation
 from PIL import Image
