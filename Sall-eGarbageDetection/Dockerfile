@@ -25,13 +25,13 @@ ENV HOME=/home/user
 COPY requirements.txt ./
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Install Hugging Face CLI + required ML dependencies
-RUN pip install --no-cache-dir huggingface_hub --upgrade
-
-# Install LoveDA repository dependencies
+# Install Hugging Face CLI + required ML dependencies (hf_hub is at 0.14.1 and may cause a crash)
+RUN pip install --no-cache-dir "huggingface_hub>=0.16.0,<0.21.0" --extra-index-url "https://download.pytorch.org/whl/cpu"
+    
+# Install LoveDA repository dependencies (last line ignore error flag on)
 RUN git clone https://github.com/Junjue-Wang/LoveDA.git /home/user/LoveDA
 WORKDIR /home/user/LoveDA
-RUN pip install --no-cache-dir -r requirements.txt || true  # (ignores errors if any)
+RUN pip install --no-cache-dir -r requirements.txt || true 
 
 # Return to working dir
 WORKDIR $HOME/app
