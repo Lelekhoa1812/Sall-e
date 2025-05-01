@@ -1,3 +1,5 @@
+# Access: https://BinKhoaLe1812-Sall-eGarbageDetection.hf.space/ui
+
 # ───────────────────────── app.py (Sall-e demo) ─────────────────────────
 # FastAPI ▸ upload image ▸ multi-model garbage detection ▸ ADE-20K
 # semantic segmentation (Water / Garbage) ▸ A* + KNN navigation ▸ H.264 video
@@ -332,14 +334,17 @@ def _pipeline(uid,img_path):
 
     # 2- Garbage detection (3 models) → keep centres on water
     detections=[]
-    for r in model_self(bgr):                    # YOLOv11
+    for r in model_self(bgr):                      # YOLOv11 (self-trained)
         detections += [b.xyxy[0].tolist() for b in r.boxes]
-    for r in model_yolo5(bgr,size=416):          # YOLOv5
-        detections += [p[:4].tolist() for p in r.pred[0]]
+        if hasattr(r, 'pred') and len(r.pred) > 0: # YOLOv5
+            detections += [p[:4].tolist() for p in r.pred[0]]
     inp=processor_detr(images=pil,return_tensors="pt")
-    with torch.no_grad(): out=model_detr(**inp)
-    post=processor_detr.post_process_object_detection(out,
-          torch.tensor([pil.size[::-1]]),threshold=0.5)[0]
+    with torch.no_grad(): out=model_detr(**inp)    # DETR
+    post = processor_detr.post_process_object_detection(
+        outputs=out,
+        target_sizes=torch.tensor([pil.size[::-1]]),
+        threshold=0.5
+    )[0]
     detections += [b.tolist() for b in post["boxes"]]
     # centre & mask filter
     centres=[]
