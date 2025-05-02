@@ -330,6 +330,7 @@ def _pipeline(uid,img_path):
     with torch.no_grad():
         seg_logits = segformer(**feat_extractor(pil,return_tensors="pt")).logits
     seg = seg_logits.argmax(1)[0].cpu().numpy()
+    seg = cv2.resize(seg, (640, 640), interpolation=cv2.INTER_NEAREST)
     water_mask = build_mask(seg)                       # 1 = water
 
     # 2- Garbage detection (3 models) → keep centres on water
