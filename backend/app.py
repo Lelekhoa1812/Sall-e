@@ -28,7 +28,6 @@ UPLOAD_DIR  = f"{CACHE}/uploads"
 OUTPUT_DIR  = f"{BASE}/outputs"
 MODEL_DIR   = f"{BASE}/model"
 SPRITE      = f"{BASE}/sprite.png"
-BG_IMG      = f"{BASE}/ocean.jpg"          # background (640×640)
 
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 os.makedirs(OUTPUT_DIR, exist_ok=True)
@@ -97,15 +96,27 @@ custom_class_map = {
 }
 TOL = 30  # RGB tolerance
 
-def build_mask(seg):                      # seg = (H,W) label ids
-    decoded = ade_palette[seg]            # (H,W,3)
-    water_mask = np.zeros(seg.shape, np.uint8)
+# Masking zones (Garbage and Water zone to be travelable)
+def build_masks(seg):
+    """
+    Returns three binary masks at (H,W):
+    water_mask   – 1 = water
+    garbage_mask – 1 = semantic “Garbage” pixels
+    movable_mask – union of water & garbage (robot can travel here)
+    """
+    decoded = ade_palette[seg]
+    water_mask   = np.zeros(seg.shape, np.uint8)
+    garbage_mask = np.zeros_like(water_mask)
+    # Append water pixels to water_mask
     for rgb in custom_class_map["Water"]:
-        diff = np.abs(decoded - rgb).max(axis=-1) <= TOL
-        water_mask |= diff
-    return water_mask                     # 1 = water, 0 = obstacle
+        water_mask |= (np.abs(decoded - rgb).max(axis=-1) <= TOL)
+    # Append gb pixels to garbage_mask
+    for rgb in custom_class_map["Garbage"]:
+        garbage_mask |= (np.abs(decoded - rgb).max(axis=-1) <= TOL)
+    movable_mask = water_mask | garbage_mask
+    return water_mask, garbage_mask, movable_mask
 
-# ── A* over binary water grid ───────────────────────────────────────────
+# ── A* and KNN over binary water grid ─────────────────────────────────
 def astar(start, goal, occ):
     h   = lambda a,b: abs(a[0]-b[0])+abs(a[1]-b[1])
     N8  = [(-1,-1),(-1,0),(-1,1),(0,-1),(0,1),(1,-1),(1,0),(1,1)]
@@ -128,6 +139,7 @@ def astar(start, goal, occ):
                 came[(nx,ny)]=cur
     return []
 
+# KNN fit
 def knn_path(start, targets, occ):
     todo = targets[:]; path=[]
     cur  = tuple(start)
@@ -141,9 +153,9 @@ def knn_path(start, targets, occ):
         cur  = nxt; todo.remove(list(nxt))
     return path
 
-# ── Robot sprite ────────────────────────────────────────────────────────
+# ── Robot sprite/class -──────────────────────────────────────────────────
 class Robot:
-    def __init__(self, sprite, speed=20):
+    def __init__(self, sprite, speed=200): # Declare the robot's physical stats and routing (position, speed, movement, path)
         self.png = np.array(Image.open(sprite).convert("RGBA").resize((40,40)))
         self.pos = [0,0]; self.speed=speed
     def step(self, path):
@@ -155,7 +167,7 @@ class Robot:
         r=self.speed/dist; self.pos=[int(self.pos[0]+dx*r), int(self.pos[1]+dy*r)]
 
 # ── FastAPI & HTML content (original styling) ───────────────────────────
-# HTML Content for UI
+# HTML Content for UI (streamed with FastAPI HTML renderer)
 HTML_CONTENT = """
 <!DOCTYPE html>
 <html>
@@ -296,6 +308,7 @@ HTML_CONTENT = """
 </html>
 """
 
+# ── Static-web ────────────────────────────────────────────────────────── 
 app = FastAPI()
 app.mount("/static", StaticFiles(directory=BASE), name="static")
 video_ready={}
@@ -304,6 +317,7 @@ def ui(): return HTML_CONTENT
 def _uid(): return uuid.uuid4().hex[:8]
 
 # ── End-points ──────────────────────────────────────────────────────────
+# User upload environment img here
 @app.post("/upload/")
 async def upload(file:UploadFile=File(...)):
     uid=_uid(); dest=f"{UPLOAD_DIR}/{uid}_{file.filename}"
@@ -311,9 +325,11 @@ async def upload(file:UploadFile=File(...)):
     threading.Thread(target=_pipeline, args=(uid,dest)).start()
     return {"user_id":uid}
 
+# Health check, make sure the video generator is alive and debug which video id is processed (multiple video can be processed at 1 worker)
 @app.get("/check_video/{uid}")
 def chk(uid:str): return {"ready":video_ready.get(uid,False)}
 
+# Where the final video being saved
 @app.get("/video/{uid}")
 def stream(uid:str):
     vid=f"{OUTPUT_DIR}/{uid}.mp4"
@@ -326,18 +342,37 @@ def _pipeline(uid,img_path):
     bgr=cv2.resize(cv2.imread(img_path),(640,640)); rgb=cv2.cvtColor(bgr,cv2.COLOR_BGR2RGB)
     pil=Image.fromarray(rgb)
 
-    # 1- Segmentation → water mask
+    # 1- Segmentation → masking each segmented zone with pytorch
     with torch.no_grad():
-        seg_logits = segformer(**feat_extractor(pil,return_tensors="pt")).logits
-    seg = seg_logits.argmax(1)[0].cpu().numpy()
-    seg = cv2.resize(seg, (640, 640), interpolation=cv2.INTER_NEAREST)
-    water_mask = build_mask(seg)                       # 1 = water
+        inputs = feat_extractor(pil, return_tensors="pt")
+        seg_logits = segformer(**inputs).logits
+    # Tensor run by CPU
+    seg_tensor = seg_logits.argmax(1)[0].cpu()
+    if seg_tensor.numel() == 0:
+        print(f"❌ [{uid}] segmentation failed (empty tensor)")
+        video_ready[uid] = True
+        return
+    # Resize the tensor to 640x640
+    seg = cv2.resize(seg_tensor.numpy(), (640, 640), interpolation=cv2.INTER_NEAREST)
+    print(f"🧪 [{uid}] segmentation input shape: {inputs['pixel_values'].shape}")
+    water_mask, garbage_mask, movable_mask = build_masks(seg) # movable zone = water and garbage masks
 
-    # 2- Garbage detection (3 models) → keep centres on water
+    # 2- Garbage detection (3 models) → keep centres on water 
     detections=[]
+    # Detect garbage chunks (from segmentation)
+    num_cc, labels = cv2.connectedComponents(garbage_mask.astype(np.uint8))
+    chunk_centres = []
+    for lab in range(1, num_cc):
+        ys, xs = np.where(labels == lab)
+        if xs.size == 0: # safety
+            continue
+        chunk_centres.append([int(xs.mean()), int(ys.mean())])
+    print(f"🧠 {len(chunk_centres)} garbage chunk detected")
+    # Detect garbage object by within travelable zones
     for r in model_self(bgr):                      # YOLOv11 (self-trained)
         detections += [b.xyxy[0].tolist() for b in r.boxes]
-        if hasattr(r, 'pred') and len(r.pred) > 0: # YOLOv5
+    for r in model_yolo5(bgr):                     # YOLOv5
+        if hasattr(r, 'pred') and len(r.pred) > 0:
             detections += [p[:4].tolist() for p in r.pred[0]]
     inp=processor_detr(images=pil,return_tensors="pt")
     with torch.no_grad(): out=model_detr(**inp)    # DETR
@@ -347,25 +382,40 @@ def _pipeline(uid,img_path):
         threshold=0.5
     )[0]
     detections += [b.tolist() for b in post["boxes"]]
-    # centre & mask filter
-    centres=[]
-    for x1,y1,x2,y2 in detections:
-        cx,cy=int((x1+x2)/2),int((y1+y2)/2)
-        if 0<=cx<640 and 0<=cy<640 and water_mask[cy,cx]:
-            centres.append([cx,cy])
-    if not centres:
+    # centre & mask filter (the garbage lies within travelable zone are collectable)
+    centres = []
+    for x1, y1, x2, y2 in detections: # Define IoU heuristic
+        '''
+        We conduct a 30% allowance whether the center 
+        of the detected garbage's bbox lies within the travelable zone
+        which was segmented earlier to be the water and garbage zone
+        '''
+        x1, y1, x2, y2 = map(int, [x1, y1, x2, y2])
+        x1 = max(0, min(x1, 639)); y1 = max(0, min(y1, 639))
+        x2 = max(0, min(x2, 639)); y2 = max(0, min(y2, 639))
+        box_mask = movable_mask[y1:y2, x1:x2]              # ← use MOVABLE mask
+        if box_mask.size == 0:
+            continue
+        if np.count_nonzero(box_mask) / box_mask.size >= 0.3:
+            centres.append([int((x1 + x2) / 2), int((y1 + y2) / 2)])
+    # add chunk centres and deduplicate
+    centres.extend(chunk_centres)
+    centres = [list(c) for c in {tuple(c) for c in centres}]
+    if not centres: # No garbages within travelable zone
         print(f"🛑 [{uid}] no reachable garbage"); video_ready[uid]=True; return
+    else: # Garbage within valid travelable zone
+        print(f"🧠 {len(centres)} garbage objects on water selected from {len(detections)} detections")
 
     # 3- Global route
     robot = Robot(SPRITE)
-    path  = knn_path(robot.pos, centres, water_mask)
+    path  = knn_path(robot.pos, centres, movable_mask)
 
     # 4- Video synthesis
     out_tmp=f"{OUTPUT_DIR}/{uid}_tmp.mp4"
     vw=cv2.VideoWriter(out_tmp,cv2.VideoWriter_fourcc(*"mp4v"),10.0,(640,640))
     objs=[{"pos":p,"col":False} for p in centres]
-    bg=cv2.imread(BG_IMG); bg=cv2.resize(bg,(640,640))
-    for _ in range(15000):                       # safety frames
+    bg = bgr.copy()
+    for _ in range(15000): # safety frames
         frame=bg.copy()
         # draw garbage
         for o in objs:
@@ -392,6 +442,6 @@ def _pipeline(uid,img_path):
     os.remove(out_tmp); video_ready[uid]=True
     print(f"✅ [{uid}] video ready → {final}")
 
-# ── Run locally (HF Space ignores) ──────────────────────────────────────
+# ── Run locally (HF Space ignores since built with Docker image) ────────
 if __name__=="__main__":
     uvicorn.run(app,host="0.0.0.0",port=7860)
