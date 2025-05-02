@@ -64,7 +64,7 @@ To evaluate the model's performance in realistic scenarios, we developed a Pytho
   </details>
   <details>
     <summary><strong>Testing Synthetic Environment 3</strong></summary>
-    <img src="testing/testing__3.jpg" alt="Testing 3" style="width: 80%; max-width: 1000px;">
+    <img src="testing/testing_3.jpg" alt="Testing 3" style="width: 80%; max-width: 1000px;">
   </details>
   <details>
     <summary><strong>Testing Synthetic Environment 4</strong></summary>
