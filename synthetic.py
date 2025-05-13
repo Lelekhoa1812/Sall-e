@@ -1,93 +1,87 @@
-import os
-import random
-import cv2
-import numpy as np
-from PIL import Image
-import PIL
+# ─────────────────────────────── Setup ───────────────────────────────
+import os, random, cv2, numpy as np
+from PIL import Image, UnidentifiedImageError
+from google.colab import files
+from io import BytesIO
+import IPython.display as display
 
-# Ensure AVIF support
-try:
-    import pillow_avif
-except ImportError:
-    print("Warning: 'pillow-avif-plugin' is not installed. Install it using 'pip install pillow-avif-plugin'.")
+# Mount Drive to access crop_dir
+crop_dir = "/content/drive/My Drive/Sall-e/crop"
+chunk_dir = os.path.join(crop_dir, "chunk")
 
-# Paths
-crop_dir = "/crop"
-testing_dir = "/testing"
-ocean_images = ["ocean1.jpg", "ocean2.avif", "ocean3.jpeg", "ocean4.jpg"]
+# ───────────────────────── Upload Interface ──────────────────────────
+print("Upload a base environment image (e.g., river or ocean):")
+uploaded = files.upload()
+uploaded_filename = list(uploaded.keys())[0]
 
-ocean_images = [os.path.join("/src", img) for img in ocean_images]
-os.makedirs(testing_dir, exist_ok=True)
+# Save uploaded file locally
+with open(uploaded_filename, 'wb') as f:
+    f.write(uploaded[uploaded_filename])
 
-# Resize ocean images to 640x640 px
+# ────── Resize Uploaded Image to 640x640 ──────
 def resize_image(image_path):
-    print(f"Processing image: {image_path}")
-    
-    # Process individually by ocean image types
     try:
-        if image_path.lower().endswith(".avif"):
-            image = Image.open(image_path).convert("RGB")
-            image = image.resize((640, 640))
-            image = np.array(image)
-            image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
-        else:
-            image = cv2.imread(image_path)
-            if image is None:
-                print(f"Warning: Could not read image {image_path}")
-                return None
-            image = cv2.resize(image, (640, 640))
-    except PIL.UnidentifiedImageError:
-        print(f"Error: Unrecognized image format {image_path}, skipping...")
+        image = Image.open(image_path).convert("RGB")
+        image = image.resize((640, 640))
+        return cv2.cvtColor(np.array(image), cv2.COLOR_RGB2BGR)
+    except UnidentifiedImageError:
+        print(f"Error: Cannot identify image file {image_path}")
         return None
-    
-    return image
 
-# Get class directories
-classes = [d for d in os.listdir(crop_dir) if os.path.isdir(os.path.join(crop_dir, d))]
+background = resize_image(uploaded_filename)
+if background is None:
+    raise RuntimeError("Failed to load image.")
 
-# Function to overlay PNG objects onto an image
+# ────── Overlay RGBA image (PNG) onto background ──────
 def overlay_image(background, overlay, x, y):
-    h, w, _ = overlay.shape
-    alpha_mask = overlay[:, :, 3] / 255.0
-    for c in range(0, 3):
-        background[y:y+h, x:x+w, c] = (alpha_mask * overlay[:, :, c] + (1 - alpha_mask) * background[y:y+h, x:x+w, c])
-    return background
+    h, w = overlay.shape[:2]
+    bg_rgb = cv2.cvtColor(background, cv2.COLOR_BGR2RGB)
+    alpha = overlay[:, :, 3] / 255.0
+    for c in range(3):  # RGB channels
+        bg_rgb[y:y+h, x:x+w, c] = (
+            alpha * overlay[:, :, c] + (1 - alpha) * bg_rgb[y:y+h, x:x+w, c]
+        )
+    return cv2.cvtColor(bg_rgb, cv2.COLOR_RGB2BGR)
 
-# Process each ocean image
-for idx, ocean_img_path in enumerate(ocean_images, start=1):
-    ocean_img = resize_image(ocean_img_path)
-    if ocean_img is None:
-        continue  # Skip if image could not be read
-    
-    # Select 8 random PNG images from each class
-    for class_name in classes:
-        class_path = os.path.join(crop_dir, class_name)
-        png_files = [f for f in os.listdir(class_path) if f.endswith(".png")]
-        selected_pngs = random.sample(png_files, min(8, len(png_files)))
-        
-        for png in selected_pngs:
-            png_path = os.path.join(class_path, png)
-            overlay = Image.open(png_path).convert("RGBA")
-            
-            # Scale down the overlay to height 10px
-            original_width, original_height = overlay.size
-            scale_factor = 10 / original_height
-            new_width = int(original_width * scale_factor)
-            overlay = overlay.resize((new_width, 30))
-            
-            # Convert overlay to NumPy array
-            overlay_np = np.array(overlay)
-            
-            # Select a random position on the ocean image
-            x_offset = random.randint(0, 640 - new_width)
-            y_offset = random.randint(0, 640 - 30)
-            
-            # Overlay the image
-            ocean_img = overlay_image(ocean_img, overlay_np, x_offset, y_offset)
-    
-    # Save the generated synthetic image with new naming convention
-    output_path = os.path.join(testing_dir, f"testing_{idx}.jpg")
-    cv2.imwrite(output_path, ocean_img)
-    print(f"{output_path} generated.")
+# ──────────────────────── Part 1: Object Overlays ────────────────────────
+for class_name in os.listdir(crop_dir):
+    class_path = os.path.join(crop_dir, class_name)
+    if not os.path.isdir(class_path) or class_name == "chunk":
+        continue  # skip non-dirs and chunk dir here
 
-print("Synthetic images generated successfully!")
+    pngs = [f for f in os.listdir(class_path) if f.endswith(".png")]
+    selected = random.sample(pngs, min(5, len(pngs)))
+
+    for img_name in selected:
+        img_path = os.path.join(class_path, img_name)
+        img = Image.open(img_path).convert("RGBA")
+
+        # Resize to height 20px
+        scale = 20 / img.size[1]
+        new_size = (int(img.size[0] * scale), 20)
+        img = img.resize(new_size)
+
+        overlay = np.array(img)
+        x = random.randint(0, 640 - new_size[0])
+        y = random.randint(0, 640 - 30)
+
+        background = overlay_image(background, overlay, x, y)
+
+# ──────────────────────── Part 2: Chunk Overlays ────────────────────────
+chunk_files = [f for f in os.listdir(chunk_dir) if f.endswith(".png")]
+for chunk_img in chunk_files:
+    chunk_path = os.path.join(chunk_dir, chunk_img)
+    img = Image.open(chunk_path).convert("RGBA").resize((30, 30))
+    overlay = np.array(img)
+
+    x = random.randint(0, 610)
+    y = random.randint(0, 610)
+    background = overlay_image(background, overlay, x, y)
+
+# ──────────────────────── Save + Display Result ────────────────────────
+output_path = "synthetic_test_image.jpg"
+cv2.imwrite(output_path, background)
+print(f"✅ Generated and saved: {output_path}")
+
+# Display inline in notebook
+display.display(Image.open(output_path))

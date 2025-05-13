@@ -259,11 +259,12 @@ Run simulation - generate video:
   ├── valid/
   ├── data.yaml
   ├── README
-/split.py              # custom splitting the dataset
 /crop.py               # crop object from data sample
 /synthetic.py          # generate synthetic testing img simulating ocean top-view
-/detect.py             # generate img simulating garbage detection on ocean
-/segment.py            # segment model UPerNet - river (target) avoid obstacles (rock, shore)
+/detect.py             # general detection
+/detect.py             # 3-model detection
+/segment.py            # segment model UPerNet - river (target) avoid obstacles 
+(rock, shore)
 /crop/                 # cropped .png images sample from various garbage classes
   ├── plastic/
   ├── metal/
@@ -275,16 +276,11 @@ Run simulation - generate video:
 /detect1/
 /model/
   ├── garbage_detector.pt
-/sample/
 /src/
-  ├── ocean1.jpg
-  ├── ocean2.avif
-  ├── ocean3.jpeg
-  ├── ocean4.jpg
   ├── results.png
   ├── eval.png
   ├── loss.png 
-/README
+/backend               # Demo side on Hugging Face
 ```
 
 ---
