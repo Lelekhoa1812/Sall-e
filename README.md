@@ -1,45 +1,52 @@
-# **Sall-e – Autonomous Robot for Oceanic Garbage Collection**
+# **Sall-e – Autonomous Robot for River & Ocean Garbage Collection**
 
 <img src="src/logo.jpg" alt="Logo" style="width: 80%; max-width: 1000px;">
 
-## **Background and Mission** 🤖🌊♻️
+## **Background and Mission**
 
-The world's oceans are facing a critical threat from plastic pollution, with an estimated **[150 million tonnes of plastic waste present as of 2016](https://en.wikipedia.org/wiki/Great_Pacific_Garbage_Patch)**, projected to increase to **[ 250 million tonnes by 2025](https://en.wikipedia.org/wiki/Marine_plastic_pollution)**. This pollution poses severe risks to marine life, ecosystems, and human health.
+Plastic pollution has shifted from an open-ocean problem to a **river-borne crisis**.  
+The Citarum River (West Java, Indonesia) is now cited as *“one of the most polluted rivers on Earth”*—an estimated **20 000 t of solid waste and 340 000 t of untreated wastewater** are discharged **every day** from ~2 000 industrial facilities and dense urban settlements :contentReference[oaicite:0]{index=0}. Down-river, this material becomes a primary source of marine debris.
 
-<img src="src/turtle.jpg" alt="Tangled Turtle" style="width: 80%; max-width: 1000px;">  
+<img src="src/turtle.jpg" alt="Tangled Turtle" style="width: 80%; max-width: 1000px;">
 
-The "Sall-e" project aims to address this issue by developing an integrated system that utilizes computer vision AI to detect marine debris and deploys robotic solutions for its collection. By leveraging drone imagery and advanced object detection models, Sall-e seeks to identify and localize garbage in ocean environments, facilitating efficient cleanup operations.
+**Sall-e** addresses this continuum—starting in rivers, ending in oceans—by combining drone imagery, AI vision models and an autonomous surface robot that can **detect, localise, and physically remove debris** with minimal ecological disturbance.
 
-<img src="src/polluted.jpg" alt="Polluted Ocean" style="width: 80%; max-width: 1000px;">  
+<img src="src/polluted.jpg" alt="Polluted Ocean" style="width: 80%; max-width: 1000px;">
 
-[ACCESSING UI DEMO 🤗](https://binkhoale1812-sall-egarbagedetection.hf.space/ui)  
-[Using API to detect garbage 🔗](https://binkhoale1812-sall-egarbagedetection.hf.space/analyze)  
-[Robotic script for Sall-e 🤖](https://github.com/Lelekhoa1812/Sall-e/Sall-eGarbageDetection/bot.py)  
-
----
-
-## **Project Target** 🎯 
-
-Citarum River in Indonesia is acclaimed as one of the most polluted rivers in the world, choking with heap upon heaps of plastic wastes, household wastes, and industrial wastes slipped into the river. The river daily admits wastage of nearly 20,000 tons and [340,000 tons of wastewater](https://indonesiaexpat.id/news/citarum-river-the-most-polluted-river-in-theworld/), which creates a very [agitating barrier in the biodiversity](https://www.adb.org/results/revitalizing-citarum-river) of this part of the world, disturbing public health, local economies, and millions of them land down to this river to meet the daily needs.
-
-Conventional cleanup operations employed by local authorities and NGOs are predominantly manual, labor-intensive, and costs the government and NGOs millions annually while failing to mitigate the crisis sustainably. Workers often dredge waste with simple tools while [facing severe pollution, toxic chemicals, and drowning hazards](https://www.theguardian.com/globaldevelopment/2020/nov/02/rotten-river-life-on-one-of-the-worlds-most-polluted-waterways-photoessay). The situation underscore an urgent necessity for innovative, autonomous solutions capable of continuously detecting, localizing, and collecting floating debris while minimizing ecological disturbance.
-
-**Key Technologies:**
-- AI-Powered Detection: YOLOv11l (custom-trained from Garbage UAV Dataset), external
-YOLOv5, DETR models.
-- GPS Localization: Real-time translation of drone-based pixel detections into real-world GPS
-coordinates using drone altitude data.
-- Navigation Optimization: Path planning via A* and KNN algorithms.
-- Drone Communication: Real-time wireless streaming of drone-captured ocean video feeds,
-including altitude data.
-- Obstacle and Riverbank Detection: Mask R-CNN and UPerNet/DeepLabV3+ architectures.
-- Post garbage-collection recycling: YOLOv11s model (custom-trained from self-collected garbage
-data)
+*Quick links*  
+- **UI Demo (Hugging Face)** – [Access](https://binkhoale1812-sall-egarbagedetection.hf.space/ui) 
+- **Inference API** – [Access](https://binkhoale1812-sall-egarbagedetection.hf.space/analyze)
 
 ---
 
-## **Synthetic Testing Image Generation** 📸
+## **Project Target: The Citarum River**
 
+> *“Every day at least 20 000 ton of waste and 340 000 ton of sewage are dumped directly into the Citarum.” [[1]](https://indonesiaexpat.id/news/citarum-river-the-most-polluted-river-in-theworld/).
+
+- **Scale of impact**: >25 million residents rely on the basin for drinking water, irrigation and fishing.  
+- **Biodiversity loss**: Fish populations have dropped by ~60 % since 2008, which creates a very agitating barrier in the biodiversity [[2]](https://www.adb.org/results/revitalizing-citarum-river).  
+- **Economic cost**: Manual clean-ups exceed several million AUD per year and expose workers to toxic sludge and drowning hazards [[3]](https://www.theguardian.com/globaldevelopment/2020/nov/02/rotten-river-life-on-one-of-the-worlds-most-polluted-waterways-photoessay).
+
+Sall-e delivers a **continuous, autonomous** alternative capable of 24 / 7 operation and data-driven route optimisation.
+
+---
+
+## **Key Technologies**
+
+| Function | Model / Algorithm | Role |
+|----------|------------------|------|
+| **Multi-modal Garbage Detection** | YOLOv11l (custom); YOLOv5; DETR | High-recall aerial detection |
+| **Semantic Segmentation** | SegFormer-B4 | Water / garbage / obstacle masks |
+| **Animal & Wildlife Safety** | YOLOv8n (on-board) + Fish/Bird classifiers | Pause collection when fauna present |
+| **Navigation** | A* + greedy KNN | Shortest traversable path |
+| **Pixel→GPS Localisation** | Altitude-scaled pin-hole model | Real-world coordinate conversion |
+| **Post-collection Recycle** | YOLOv8s (10-class) garbage classifier | Plastic vs. metal vs. organic … |
+
+<img src="architecture/diagram.png" alt="Full Architecture" style="width: 100%; max-width: 1000px;">
+
+---
+
+## **Synthetic Testing Image Generation**  
 To evaluate the model's performance in realistic scenarios, we developed a Python script `synthetic.py` to create synthetic testing images. The script performs the following tasks:
 
 1. **Image Preparation**: Numerous ocean background image (`ocean 1-4 images`) of different sizing is resized to 640×640 pixels to match the model's input requirements.
@@ -48,12 +55,8 @@ To evaluate the model's performance in realistic scenarios, we developed a Pytho
 
 3. **Synthetic Image Creation**: Pastes the extracted objects onto the resized ocean background at random locations, generating three synthetic testing images. These images are saved in the `testing` directory for subsequent evaluation.
 
----
-
-## **Simulation Images Testing Environment** 🧪
 <details>
   <summary><strong>List Testing Images</strong></summary>
-
   <details>
     <summary><strong>Testing Synthetic Environment 1</strong></summary>
     <img src="testing/testing_1.jpg" alt="Testing 1" style="width: 80%; max-width: 1000px;">
@@ -78,12 +81,11 @@ To evaluate the model's performance in realistic scenarios, we developed a Pytho
     <summary><strong>Testing Real Environment 2</strong></summary>
     <img src="testing/testing_6.jpg" alt="Testing 6" style="width: 80%; max-width: 1000px;">
   </details>
-
 </details>
 
 ---
 
-## **Approach to Model Self-Training** ⚡
+## **Approach to Model Self-Training**  
 
 To equip Sall-e with the capability to detect marine debris, we employed the YOLOv11m object detection model, leveraging the Ultralytics Hub for training and deployment. The training process involved the following steps:
 
@@ -120,40 +122,56 @@ To equip Sall-e with the capability to detect marine debris, we employed the YOL
 
 ---
 
-## **Simulation Images Garbage Self-trained Model Detection** 🔍
-<details>
-  <summary><strong>List Self-trained Detection Images</strong></summary>
+## **Animal Detection & Wildlife Safety**
 
-  <details>
-    <summary><strong>Detection Synthetic Environment 1</strong></summary>
-    <img src="detect1/detect_1.jpg" alt="Detection 1" style="width: 80%; max-width: 1000px;">
-  </details>
-  <details>
-    <summary><strong>Detection Synthetic Environment 2</strong></summary>
-    <img src="detect1/detect_2.jpg" alt="Detection 2" style="width: 80%; max-width: 1000px;">
-  </details>
-  <details>
-    <summary><strong>Detection Synthetic Environment 3</strong></summary>
-    <img src="detect1/detect_3.jpg" alt="Detection 3" style="width: 80%; max-width: 1000px;">
-  </details>
-  <details>
-    <summary><strong>Detection Synthetic Environment 4</strong></summary>
-    <img src="detect1/detect_4.jpg" alt="Detection 4" style="width: 80%; max-width: 1000px;">
-  </details>
-  <details>
-    <summary><strong>Detection Real Environment 1</strong></summary>
-    <img src="detect1/detect_5.jpg" alt="Detection 5" style="width: 80%; max-width: 1000px;">
-  </details>
-  <details>
-    <summary><strong>Detection Real Environment 2</strong></summary>
-    <img src="detect1/detect_6.jpg" alt="Detection 6" style="width: 80%; max-width: 1000px;">
-  </details>
+Before each pickup, a **front-mounted HD camera** feeds frames to a lightweight animal-safety stack:
 
-</details>
+- **YOLOv8n** – detects mammals and birds in ≤ 20 ms / frame on Jetson Orin.  
+- **Fish & Bird specialist models** – cloud fallback via Roboflow endpoints for finer taxa [[4]](https://universe.roboflow.com/team-hope-mmcyy/hydroquest
+)[[5]](https://universe.roboflow.com/sky-sd2zq/bird_only-pt0bm/model/1).  
+- **Policy** – if any detection ≥ 0.70 confidence overlaps the conveyor field-of-view, Sall-e suspends the conveyor until fauna exit the frame.  
+This “stop-collect” protocol meets UNESCO AI environmental-impact guidelines.
+
+<table>
+  <tr>
+    <td><img src="result/fish.jpeg" alt="Fish Detection" width="300" height="200"/></td>
+    <td><img src="result/bird.jpeg" alt="Bird Detection" width="300" height="200"/></td>
+  </tr>
+  <tr>
+    <td align="center"><strong>Fish Detection Output</strong></td>
+    <td align="center"><strong>Bird Detection Output</strong></td>
+  </tr>
+</table>
+
+
+## **Semantic Segmentation & Obstacle Avoidance**
+
+The **SegFormer-B4** transformer provides pixel-wise masks:
+
+- **Reported mIoU:** 84.4 % on ADE20K (Xie et al., 2021).  
+- **Custom rule-set** re-labels ambiguous sand/garbage pixels (RGB 150-5-61) based on local density.  
+- **Navigation map:** movable = water ∪ garbage. Obstacles (vegetation, banks, structures) are strictly non-traversable.
+
+<img src="result/segment.png" alt="Model Evaluation Result" style="width: 100%; max-width: 1000px;">
+
+
+## **Garbage Classification & Recycling**
+
+After the storage bin is full or on demand, images from an internal bin-cam are analysed by **YOLOv8s (10-class)**:
+
+| Class | Example Output |
+|-------|----------------|
+| Plastic bottle | `plastic (0.91)` |
+| Aluminium can  | `metal (0.88)` |
+| Cardboard       | `paper (0.79)` |
+
+These labels allow automatic **stream-separation at the deposit station**, feeding local recyclers and closing the waste loop.
+
+<img src="result/garbage.jpeg" alt="Model Evaluation Result" style="width: 100%; max-width: 1000px;">
 
 ---
 
-## **Multi-Model Garbage Detection** 🔄
+## **Multi-Model Garbage Detection**  
 The **Sall-e** project integrates multiple models to enhance garbage detection using computer vision. The implementation leverages three different object detection models:
 
 <details>
@@ -169,12 +187,8 @@ The **Sall-e** project integrates multiple models to enhance garbage detection u
   <li>The model utilizes a <strong>ResNet-50</strong> backbone and processes images using PyTorch and the <italic>transformers</italic> library.</li>
 </details>
 
----
-
-## **Simulation Garbage Multi-modal Detection** 🤝
 <details>
   <summary><strong>List Multi-modal Detection with Annotation</strong></summary>
-
   <details>
     <summary><strong>Detection Synthetic Environment 1</strong></summary>
     <img src="detect/detect_1.jpg" alt="Detection multi 1" style="width: 80%; max-width: 1000px;">
@@ -199,13 +213,13 @@ The **Sall-e** project integrates multiple models to enhance garbage detection u
     <summary><strong>Detection Real Environment 2</strong></summary>
     <img src="detect/detect_6.jpg" alt="Detection multi 6" style="width: 80%; max-width: 1000px;">
   </details>
+</details>
 
 This multi-model approach provides better benchmarking and performance analysis for garbage detection in oceanic environments, improving robustness across different detection architectures. 
-</details>
 
 ---
 
-## **Garbage Collection Simulation Video** 🎥
+## **Garbage Collection Simulation Video**
 The **Garbage Collection Simulation** visualizes how an autonomous floating robot, **Sall-e**, navigates an ocean environment to collect garbage using AI-based object detection.
 
 ### **Simulation Features**:
@@ -220,9 +234,11 @@ The **Garbage Collection Simulation** visualizes how an autonomous floating robo
 
 This simulation helps visualize the efficiency of the garbage collection system and showcases the AI-driven movement strategy of the Sall-e robot.
 
+> *"Access real-time simulation on [FastAPI App](https://binkhoale1812-sall-egarbagedetection.hf.space/ui).
+
 ---
 
-## **Project Setup** 🛠️
+## **Project Setup** 
 
 Clone this project:
 ```bash
@@ -251,7 +267,7 @@ Run simulation - generate video:
 
 ---
 
-## **Project Structure** 📁
+## **Project Structure**
 ```plaintext
 /dataset/
   ├── test/
@@ -285,7 +301,7 @@ Run simulation - generate video:
 
 ---
 
-## **Dataset Acknowledgment and Statistics** 📊
+## **Dataset Acknowledgment**
 
 We acknowledge the use of the **[Garbage Detection UAV](https://en.wikipedia.org/wiki/Great_Pacific_Garbage_Patch)** dataset from Roboflow Universe in our project. The dataset's key statistics are as follows:
 
@@ -298,26 +314,11 @@ The dataset encompasses a diverse range of garbage types, providing a robust fou
 
 ---
 
-## **Segmentation Model on Obstacle Avoidance and Riverbank Allowance**  🏷️
-
-<details>
-  <summary><strong>Segmentation Visualization on Clear Water</strong></summary>
-    <img src="src/segment1.png" alt="Segment Clear" style="width: 80%; max-width: 1000px;">  
-</details>
-
-<details>
-  <summary><strong>Segmentation Visualization on Polluted Water</strong></summary>
-    <img src="src/segment2.png" alt="Segment Polluted" style="width: 80%; max-width: 1000px;">  
-</details>
-
-
---- 
-
-## **Conclusion** 🚀
+## **Conclusion**
 
 The Sall-e project represents a concerted effort to harness advanced technologies in addressing the pressing issue of oceanic plastic pollution. By integrating computer vision and robotics, we aim to enhance the efficiency and effectiveness of marine debris detection and collection, contributing to the preservation of ocean health and biodiversity.
 
 ---
 
-## **Acknowledgement of Resources** ✍️
+## **Acknowledgement of Resources**
 This project is a product from unit ENG30002 - Engineering Technology Sustainability Project, Swinburne University of Technology.  
