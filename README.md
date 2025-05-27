@@ -21,7 +21,7 @@ The Citarum River (West Java, Indonesia) is now cited as *“one of the most pol
 
 ## **Project Target: The Citarum River**
 
-> *“Every day at least 20 000 ton of waste and 340 000 ton of sewage are dumped directly into the Citarum.” [[1]](https://indonesiaexpat.id/news/citarum-river-the-most-polluted-river-in-theworld/).
+> “Every day at least 20 000 ton of waste and 340 000 ton of sewage are dumped directly into the Citarum.” [[1]](https://indonesiaexpat.id/news/citarum-river-the-most-polluted-river-in-theworld/).
 
 - **Scale of impact**: >25 million residents rely on the basin for drinking water, irrigation and fishing.  
 - **Biodiversity loss**: Fish populations have dropped by ~60 % since 2008, which creates a very agitating barrier in the biodiversity [[2]](https://www.adb.org/results/revitalizing-citarum-river).  
@@ -234,7 +234,7 @@ The **Garbage Collection Simulation** visualizes how an autonomous floating robo
 
 This simulation helps visualize the efficiency of the garbage collection system and showcases the AI-driven movement strategy of the Sall-e robot.
 
-> *"Access real-time simulation on [FastAPI App](https://binkhoale1812-sall-egarbagedetection.hf.space/ui).
+> "Access real-time simulation on [FastAPI App](https://binkhoale1812-sall-egarbagedetection.hf.space/ui).
 
 ---
 
